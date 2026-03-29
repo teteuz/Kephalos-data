@@ -1,185 +1,166 @@
 <template>
-  <div class="workbench-panel">
-    <div class="scroll-container">
-      <!-- Step 01: Ontology -->
-      <div class="step-card" :class="{ 'active': currentPhase === 0, 'completed': currentPhase > 0 }">
-        <div class="card-header">
-          <div class="step-info">
-            <span class="step-num">01</span>
-            <span class="step-title">本体生成</span>
+  <div class="wb">
+    <div class="wb-scroll">
+
+      <!-- Step 01 -->
+      <div class="wb-step" :class="{ active: currentPhase === 0, done: currentPhase > 0 }">
+        <div class="wb-step-head">
+          <div class="wb-step-left">
+            <span class="wb-step-n">01</span>
+            <span class="wb-step-title">Ontology Generation</span>
           </div>
-          <div class="step-status">
-            <span v-if="currentPhase > 0" class="badge success">已完成</span>
-            <span v-else-if="currentPhase === 0" class="badge processing">生成中</span>
-            <span v-else class="badge pending">等待</span>
-          </div>
+          <span v-if="currentPhase > 0" class="wb-badge wb-badge--ok">COMPLETED</span>
+          <span v-else-if="currentPhase === 0" class="wb-badge wb-badge--run">GENERATING</span>
+          <span v-else class="wb-badge wb-badge--idle">PENDING</span>
         </div>
-        
-        <div class="card-content">
-          <p class="api-note">POST /api/graph/ontology/generate</p>
-          <p class="description">
-            LLM分析文档内容与模拟需求，提取出现实种子，自动生成合适的本体结构
-          </p>
 
-          <!-- Loading / Progress -->
-          <div v-if="currentPhase === 0 && ontologyProgress" class="progress-section">
-            <div class="spinner-sm"></div>
-            <span>{{ ontologyProgress.message || '正在分析文档...' }}</span>
+        <div class="wb-step-body">
+          <span class="wb-endpoint">POST /api/graph/ontology/generate</span>
+          <p class="wb-desc">LLM analyzes documents and simulation requirements, extracts real-world seeds, and generates the proper ontology structure.</p>
+
+          <div v-if="currentPhase === 0 && ontologyProgress" class="wb-progress">
+            <span class="wb-spinner"></span>
+            <span>{{ ontologyProgress.message || 'Analyzing documents...' }}</span>
           </div>
 
-          <!-- Detail Overlay -->
-          <div v-if="selectedOntologyItem" class="ontology-detail-overlay">
-            <div class="detail-header">
-               <div class="detail-title-group">
-                  <span class="detail-type-badge">{{ selectedOntologyItem.itemType === 'entity' ? 'ENTITY' : 'RELATION' }}</span>
-                  <span class="detail-name">{{ selectedOntologyItem.name }}</span>
-               </div>
-               <button class="close-btn" @click="selectedOntologyItem = null">×</button>
+          <!-- Ontology detail overlay -->
+          <div v-if="selectedOntologyItem" class="wb-overlay">
+            <div class="wb-overlay-head">
+              <span class="wb-overlay-badge">{{ selectedOntologyItem.itemType === 'entity' ? 'ENTITY' : 'RELATION' }}</span>
+              <span class="wb-overlay-name">{{ selectedOntologyItem.name }}</span>
+              <button class="wb-overlay-close" @click="selectedOntologyItem = null">×</button>
             </div>
-            <div class="detail-body">
-               <div class="detail-desc">{{ selectedOntologyItem.description }}</div>
-               
-               <!-- Attributes -->
-               <div class="detail-section" v-if="selectedOntologyItem.attributes?.length">
-                  <span class="section-label">ATTRIBUTES</span>
-                  <div class="attr-list">
-                     <div v-for="attr in selectedOntologyItem.attributes" :key="attr.name" class="attr-item">
-                        <span class="attr-name">{{ attr.name }}</span>
-                        <span class="attr-type">({{ attr.type }})</span>
-                        <span class="attr-desc">{{ attr.description }}</span>
-                     </div>
-                  </div>
-               </div>
+            <p class="wb-overlay-desc">{{ selectedOntologyItem.description }}</p>
 
-               <!-- Examples (Entity) -->
-               <div class="detail-section" v-if="selectedOntologyItem.examples?.length">
-                  <span class="section-label">EXAMPLES</span>
-                  <div class="example-list">
-                     <span v-for="ex in selectedOntologyItem.examples" :key="ex" class="example-tag">{{ ex }}</span>
-                  </div>
-               </div>
-
-               <!-- Source/Target (Relation) -->
-               <div class="detail-section" v-if="selectedOntologyItem.source_targets?.length">
-                  <span class="section-label">CONNECTIONS</span>
-                  <div class="conn-list">
-                     <div v-for="(conn, idx) in selectedOntologyItem.source_targets" :key="idx" class="conn-item">
-                        <span class="conn-node">{{ conn.source }}</span>
-                        <span class="conn-arrow">→</span>
-                        <span class="conn-node">{{ conn.target }}</span>
-                     </div>
-                  </div>
-               </div>
+            <div v-if="selectedOntologyItem.attributes?.length" class="wb-overlay-section">
+              <span class="wb-overlay-label">ATTRIBUTES</span>
+              <div class="wb-attr-list">
+                <div v-for="a in selectedOntologyItem.attributes" :key="a.name" class="wb-attr">
+                  <span class="wb-attr-name">{{ a.name }}</span>
+                  <span class="wb-attr-type">{{ a.type }}</span>
+                  <span class="wb-attr-desc">{{ a.description }}</span>
+                </div>
+              </div>
+            </div>
+            <div v-if="selectedOntologyItem.examples?.length" class="wb-overlay-section">
+              <span class="wb-overlay-label">EXAMPLES</span>
+              <div class="wb-ex-list">
+                <span v-for="ex in selectedOntologyItem.examples" :key="ex" class="wb-ex">{{ ex }}</span>
+              </div>
+            </div>
+            <div v-if="selectedOntologyItem.source_targets?.length" class="wb-overlay-section">
+              <span class="wb-overlay-label">CONNECTIONS</span>
+              <div class="wb-conn-list">
+                <div v-for="(c, i) in selectedOntologyItem.source_targets" :key="i" class="wb-conn">
+                  <span>{{ c.source }}</span><span class="wb-conn-arrow">→</span><span>{{ c.target }}</span>
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- Generated Entity Tags -->
-          <div v-if="projectData?.ontology?.entity_types" class="tags-container" :class="{ 'dimmed': selectedOntologyItem }">
-            <span class="tag-label">GENERATED ENTITY TYPES</span>
-            <div class="tags-list">
-              <span 
-                v-for="entity in projectData.ontology.entity_types" 
-                :key="entity.name" 
-                class="entity-tag clickable"
-                @click="selectOntologyItem(entity, 'entity')"
-              >
-                {{ entity.name }}
-              </span>
+          <!-- Entity tags -->
+          <div v-if="projectData?.ontology?.entity_types" class="wb-tags" :class="{ dim: selectedOntologyItem }">
+            <span class="wb-tag-label">ENTITY TYPES</span>
+            <div class="wb-tag-list">
+              <span
+                v-for="e in projectData.ontology.entity_types" :key="e.name"
+                class="wb-tag wb-tag--entity"
+                @click="selectOntologyItem(e, 'entity')"
+              >{{ e.name }}</span>
             </div>
           </div>
 
-          <!-- Generated Relation Tags -->
-          <div v-if="projectData?.ontology?.edge_types" class="tags-container" :class="{ 'dimmed': selectedOntologyItem }">
-            <span class="tag-label">GENERATED RELATION TYPES</span>
-            <div class="tags-list">
-              <span 
-                v-for="rel in projectData.ontology.edge_types" 
-                :key="rel.name" 
-                class="entity-tag clickable"
-                @click="selectOntologyItem(rel, 'relation')"
-              >
-                {{ rel.name }}
-              </span>
+          <!-- Relation tags -->
+          <div v-if="projectData?.ontology?.edge_types" class="wb-tags" :class="{ dim: selectedOntologyItem }">
+            <span class="wb-tag-label">RELATION TYPES</span>
+            <div class="wb-tag-list">
+              <span
+                v-for="r in projectData.ontology.edge_types" :key="r.name"
+                class="wb-tag wb-tag--relation"
+                @click="selectOntologyItem(r, 'relation')"
+              >{{ r.name }}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Step 02: Graph Build -->
-      <div class="step-card" :class="{ 'active': currentPhase === 1, 'completed': currentPhase > 1 }">
-        <div class="card-header">
-          <div class="step-info">
-            <span class="step-num">02</span>
-            <span class="step-title">GraphRAG构建</span>
+      <!-- Step 02 -->
+      <div class="wb-step" :class="{ active: currentPhase === 1, done: currentPhase > 1 }">
+        <div class="wb-step-head">
+          <div class="wb-step-left">
+            <span class="wb-step-n">02</span>
+            <span class="wb-step-title">GraphRAG Build</span>
           </div>
-          <div class="step-status">
-            <span v-if="currentPhase > 1" class="badge success">已完成</span>
-            <span v-else-if="currentPhase === 1" class="badge processing">{{ buildProgress?.progress || 0 }}%</span>
-            <span v-else class="badge pending">等待</span>
-          </div>
+          <span v-if="currentPhase > 1" class="wb-badge wb-badge--ok">COMPLETED</span>
+          <span v-else-if="currentPhase === 1" class="wb-badge wb-badge--run">{{ buildProgress?.progress || 0 }}%</span>
+          <span v-else class="wb-badge wb-badge--idle">PENDING</span>
         </div>
 
-        <div class="card-content">
-          <p class="api-note">POST /api/graph/build</p>
-          <p class="description">
-            基于生成的本体，将文档自动分块后调用 Zep 构建知识图谱，提取实体和关系，并形成时序记忆与社区摘要
-          </p>
-          
-          <!-- Stats Cards -->
-          <div class="stats-grid">
-            <div class="stat-card">
-              <span class="stat-value">{{ graphStats.nodes }}</span>
-              <span class="stat-label">实体节点</span>
+        <div class="wb-step-body">
+          <span class="wb-endpoint">POST /api/graph/build</span>
+          <p class="wb-desc">Documents are chunked and processed by Zep to build a knowledge graph, extract entities/relations, and form temporal memory plus community summaries.</p>
+
+          <div class="wb-stats">
+            <div class="wb-stat">
+              <span class="wb-stat-val">{{ graphStats.nodes }}</span>
+              <span class="wb-stat-key">NODES</span>
             </div>
-            <div class="stat-card">
-              <span class="stat-value">{{ graphStats.edges }}</span>
-              <span class="stat-label">关系边</span>
+            <div class="wb-stat">
+              <span class="wb-stat-val">{{ graphStats.edges }}</span>
+              <span class="wb-stat-key">EDGES</span>
             </div>
-            <div class="stat-card">
-              <span class="stat-value">{{ graphStats.types }}</span>
-              <span class="stat-label">SCHEMA类型</span>
+            <div class="wb-stat">
+              <span class="wb-stat-val">{{ graphStats.types }}</span>
+              <span class="wb-stat-key">TYPES</span>
             </div>
+          </div>
+
+          <!-- Progress bar when building -->
+          <div v-if="currentPhase === 1 && buildProgress" class="wb-bar-wrap">
+            <div class="wb-bar">
+              <div class="wb-bar-fill" :style="{ width: (buildProgress.progress || 0) + '%' }"></div>
+            </div>
+            <span class="wb-bar-pct">{{ buildProgress.progress || 0 }}%</span>
           </div>
         </div>
       </div>
 
-      <!-- Step 03: Complete -->
-      <div class="step-card" :class="{ 'active': currentPhase === 2, 'completed': currentPhase >= 2 }">
-        <div class="card-header">
-          <div class="step-info">
-            <span class="step-num">03</span>
-            <span class="step-title">构建完成</span>
+      <!-- Step 03 -->
+      <div class="wb-step" :class="{ active: currentPhase >= 2 }">
+        <div class="wb-step-head">
+          <div class="wb-step-left">
+            <span class="wb-step-n">03</span>
+            <span class="wb-step-title">Build Complete</span>
           </div>
-          <div class="step-status">
-            <span v-if="currentPhase >= 2" class="badge accent">进行中</span>
-          </div>
+          <span v-if="currentPhase >= 2" class="wb-badge wb-badge--run">IN PROGRESS</span>
         </div>
-        
-        <div class="card-content">
-          <p class="api-note">POST /api/simulation/create</p>
-          <p class="description">图谱构建已完成，请进入下一步进行模拟环境搭建</p>
-          <button 
-            class="action-btn" 
+
+        <div class="wb-step-body">
+          <span class="wb-endpoint">POST /api/simulation/create</span>
+          <p class="wb-desc">Graph build is complete. Continue to the next step: Environment Setup.</p>
+          <button
+            class="wb-action"
             :disabled="currentPhase < 2 || creatingSimulation"
             @click="handleEnterEnvSetup"
           >
-            <span v-if="creatingSimulation" class="spinner-sm"></span>
-            {{ creatingSimulation ? '创建中...' : '进入环境搭建 ➝' }}
+            <span v-if="creatingSimulation" class="wb-spinner"></span>
+            {{ creatingSimulation ? 'Creating simulation...' : 'Go to Environment Setup →' }}
           </button>
         </div>
       </div>
+
     </div>
 
-    <!-- Bottom Info / Logs -->
-    <div class="system-logs">
-      <div class="log-header">
-        <span class="log-title">SYSTEM DASHBOARD</span>
-        <span class="log-id">{{ projectData?.project_id || 'NO_PROJECT' }}</span>
+    <!-- System log -->
+    <div class="wb-log">
+      <div class="wb-log-header">
+        <span class="wb-log-label">SYSTEM DASHBOARD</span>
+        <span class="wb-log-id">{{ projectData?.project_id || 'NO_PROJECT' }}</span>
       </div>
-      <div class="log-content" ref="logContent">
-        <div class="log-line" v-for="(log, idx) in systemLogs" :key="idx">
-          <span class="log-time">{{ log.time }}</span>
-          <span class="log-msg">{{ log.msg }}</span>
+      <div class="wb-log-body" ref="logContent">
+        <div class="wb-log-line" v-for="(log, i) in systemLogs" :key="i">
+          <span class="wb-log-time">{{ log.time }}</span>
+          <span class="wb-log-msg">{{ log.msg }}</span>
         </div>
       </div>
     </div>
@@ -208,15 +189,9 @@ const selectedOntologyItem = ref(null)
 const logContent = ref(null)
 const creatingSimulation = ref(false)
 
-// 进入环境搭建 - 创建 simulation 并跳转
 const handleEnterEnvSetup = async () => {
-  if (!props.projectData?.project_id || !props.projectData?.graph_id) {
-    console.error('缺少项目或图谱信息')
-    return
-  }
-  
+  if (!props.projectData?.project_id || !props.projectData?.graph_id) return
   creatingSimulation.value = true
-  
   try {
     const res = await createSimulation({
       project_id: props.projectData.project_id,
@@ -224,20 +199,13 @@ const handleEnterEnvSetup = async () => {
       enable_twitter: true,
       enable_reddit: true
     })
-    
     if (res.success && res.data?.simulation_id) {
-      // 跳转到 simulation 页面
-      router.push({
-        name: 'Simulation',
-        params: { simulationId: res.data.simulation_id }
-      })
+      router.push({ name: 'Simulation', params: { simulationId: res.data.simulation_id } })
     } else {
-      console.error('创建模拟失败:', res.error)
-      alert('创建模拟失败: ' + (res.error || '未知错误'))
+      alert('Failed to create simulation: ' + (res.error || 'Unknown error'))
     }
   } catch (err) {
-    console.error('创建模拟异常:', err)
-    alert('创建模拟异常: ' + err.message)
+    alert('Exception: ' + err.message)
   } finally {
     creatingSimulation.value = false
   }
@@ -247,452 +215,222 @@ const selectOntologyItem = (item, type) => {
   selectedOntologyItem.value = { ...item, itemType: type }
 }
 
-const graphStats = computed(() => {
-  const nodes = props.graphData?.node_count || props.graphData?.nodes?.length || 0
-  const edges = props.graphData?.edge_count || props.graphData?.edges?.length || 0
-  const types = props.projectData?.ontology?.entity_types?.length || 0
-  return { nodes, edges, types }
-})
+const graphStats = computed(() => ({
+  nodes: props.graphData?.node_count || props.graphData?.nodes?.length || 0,
+  edges: props.graphData?.edge_count || props.graphData?.edges?.length || 0,
+  types: props.projectData?.ontology?.entity_types?.length || 0
+}))
 
-const formatDate = (dateStr) => {
-  if (!dateStr) return '--:--:--'
-  const d = new Date(dateStr)
-  return d.toLocaleTimeString('en-US', { hour12: false }) + '.' + d.getMilliseconds()
-}
-
-// Auto-scroll logs
 watch(() => props.systemLogs.length, () => {
-  nextTick(() => {
-    if (logContent.value) {
-      logContent.value.scrollTop = logContent.value.scrollHeight
-    }
-  })
+  nextTick(() => { if (logContent.value) logContent.value.scrollTop = logContent.value.scrollHeight })
 })
 </script>
 
 <style scoped>
-.workbench-panel {
+/* ── BASE ── */
+.wb {
   height: 100%;
-  background-color: #FAFAFA;
-  display: flex;
-  flex-direction: column;
-  position: relative;
+  background: #080808;
+  display: flex; flex-direction: column;
+  font-family: 'Roboto Mono', 'JetBrains Mono', monospace;
   overflow: hidden;
 }
 
-.scroll-container {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+.wb-scroll {
+  flex: 1; overflow-y: auto;
+  padding: 20px; display: flex; flex-direction: column; gap: 1px;
 }
+.wb-scroll::-webkit-scrollbar { width: 3px; }
+.wb-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
 
-.step-card {
-  background: #FFF;
+/* ── STEP CARD ── */
+.wb-step {
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 8px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  border: 1px solid #EAEAEA;
-  transition: all 0.3s ease;
-  position: relative; /* For absolute overlay */
-}
-
-.step-card.active {
-  border-color: #FF5722;
-  box-shadow: 0 4px 12px rgba(255, 87, 34, 0.08);
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.step-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.step-num {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 20px;
-  font-weight: 700;
-  color: #E0E0E0;
-}
-
-.step-card.active .step-num,
-.step-card.completed .step-num {
-  color: #000;
-}
-
-.step-title {
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.5px;
-}
-
-.badge {
-  font-size: 10px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-weight: 600;
-  text-transform: uppercase;
-}
-
-.badge.success { background: #E8F5E9; color: #2E7D32; }
-.badge.processing { background: #FF5722; color: #FFF; }
-.badge.accent { background: #FF5722; color: #FFF; }
-.badge.pending { background: #F5F5F5; color: #999; }
-
-.api-note {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: #999;
+  overflow: hidden;
+  transition: border-color 0.2s;
   margin-bottom: 8px;
 }
+.wb-step.active { border-color: rgba(255,255,255,0.14); }
+.wb-step.done { border-color: rgba(34,197,94,0.15); }
 
-.description {
-  font-size: 12px;
-  color: #666;
-  line-height: 1.5;
-  margin-bottom: 16px;
+.wb-step-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px;
+  background: rgba(255,255,255,0.02);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
 }
+.wb-step.active .wb-step-head { background: rgba(255,255,255,0.04); }
 
-/* Step 01 Tags */
-.tags-container {
-  margin-top: 12px;
-  transition: opacity 0.3s;
+.wb-step-left { display: flex; align-items: center; gap: 14px; }
+
+.wb-step-n {
+  font-size: 1.1rem; font-weight: 700;
+  color: rgba(255,255,255,0.15);
 }
+.wb-step.active .wb-step-n,
+.wb-step.done .wb-step-n { color: rgba(255,255,255,0.6); }
 
-.tags-container.dimmed {
-    opacity: 0.3;
-    pointer-events: none;
+.wb-step-title {
+  font-size: 0.82rem; font-weight: 600;
+  color: rgba(255,255,255,0.5); letter-spacing: 0.02em;
 }
+.wb-step.active .wb-step-title { color: #fff; }
 
-.tag-label {
-  display: block;
-  font-size: 10px;
-  color: #AAA;
-  margin-bottom: 8px;
-  font-weight: 600;
+/* ── BADGES ── */
+.wb-badge {
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em;
+  padding: 3px 8px; border-radius: 3px;
 }
+.wb-badge--ok { background: rgba(34,197,94,0.1); color: #22c55e; border: 1px solid rgba(34,197,94,0.25); }
+.wb-badge--run { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.12); animation: blink 1.5s infinite; }
+.wb-badge--idle { background: transparent; color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.07); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
 
-.tags-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+/* ── STEP BODY ── */
+.wb-step-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
+
+.wb-endpoint {
+  font-size: 0.65rem; color: rgba(255,255,255,0.2); letter-spacing: 0.06em;
 }
+.wb-desc { font-size: 0.75rem; color: rgba(255,255,255,0.35); line-height: 1.6; }
 
-.entity-tag {
-  background: #F5F5F5;
-  border: 1px solid #EEE;
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 11px;
-  color: #333;
-  font-family: 'JetBrains Mono', monospace;
-  transition: all 0.2s;
+/* Progress spinner */
+.wb-progress {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.72rem; color: rgba(255,255,255,0.4);
 }
-
-.entity-tag.clickable {
-    cursor: pointer;
+.wb-spinner {
+  width: 12px; height: 12px; flex-shrink: 0;
+  border: 1.5px solid rgba(255,255,255,0.1);
+  border-top-color: rgba(255,255,255,0.5);
+  border-radius: 50%; animation: spin 0.8s linear infinite;
 }
-
-.entity-tag.clickable:hover {
-    background: #E0E0E0;
-    border-color: #CCC;
-}
-
-/* Ontology Detail Overlay */
-.ontology-detail-overlay {
-    position: absolute;
-    top: 60px; /* Below header roughly */
-    left: 20px;
-    right: 20px;
-    bottom: 20px;
-    background: rgba(255, 255, 255, 0.98);
-    backdrop-filter: blur(4px);
-    z-index: 10;
-    border: 1px solid #EAEAEA;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-    border-radius: 6px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    animation: fadeIn 0.2s ease-out;
-}
-
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-.detail-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 16px;
-    border-bottom: 1px solid #EAEAEA;
-    background: #FAFAFA;
-}
-
-.detail-title-group {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.detail-type-badge {
-    font-size: 9px;
-    font-weight: 700;
-    color: #FFF;
-    background: #000;
-    padding: 2px 6px;
-    border-radius: 2px;
-    text-transform: uppercase;
-}
-
-.detail-name {
-    font-size: 14px;
-    font-weight: 700;
-    font-family: 'JetBrains Mono', monospace;
-}
-
-.close-btn {
-    background: none;
-    border: none;
-    font-size: 18px;
-    color: #999;
-    cursor: pointer;
-    line-height: 1;
-}
-
-.close-btn:hover {
-    color: #333;
-}
-
-.detail-body {
-    flex: 1;
-    overflow-y: auto;
-    padding: 16px;
-}
-
-.detail-desc {
-    font-size: 12px;
-    color: #444;
-    line-height: 1.5;
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px dashed #EAEAEA;
-}
-
-.detail-section {
-    margin-bottom: 16px;
-}
-
-.section-label {
-    display: block;
-    font-size: 10px;
-    font-weight: 600;
-    color: #AAA;
-    margin-bottom: 8px;
-}
-
-.attr-list, .conn-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-}
-
-.attr-item {
-    font-size: 11px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: baseline;
-    padding: 4px;
-    background: #F9F9F9;
-    border-radius: 4px;
-}
-
-.attr-name {
-    font-family: 'JetBrains Mono', monospace;
-    font-weight: 600;
-    color: #000;
-}
-
-.attr-type {
-    color: #999;
-    font-size: 10px;
-}
-
-.attr-desc {
-    color: #555;
-    flex: 1;
-    min-width: 150px;
-}
-
-.example-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-}
-
-.example-tag {
-    font-size: 11px;
-    background: #FFF;
-    border: 1px solid #E0E0E0;
-    padding: 3px 8px;
-    border-radius: 12px;
-    color: #555;
-}
-
-.conn-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    padding: 6px;
-    background: #F5F5F5;
-    border-radius: 4px;
-    font-family: 'JetBrains Mono', monospace;
-}
-
-.conn-node {
-    font-weight: 600;
-    color: #333;
-}
-
-.conn-arrow {
-    color: #BBB;
-}
-
-/* Step 02 Stats */
-.stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-  background: #F9F9F9;
-  padding: 16px;
-  border-radius: 6px;
-}
-
-.stat-card {
-  text-align: center;
-}
-
-.stat-value {
-  display: block;
-  font-size: 20px;
-  font-weight: 700;
-  color: #000;
-  font-family: 'JetBrains Mono', monospace;
-}
-
-.stat-label {
-  font-size: 9px;
-  color: #999;
-  text-transform: uppercase;
-  margin-top: 4px;
-  display: block;
-}
-
-/* Step 03 Button */
-.action-btn {
-  width: 100%;
-  background: #000;
-  color: #FFF;
-  border: none;
-  padding: 14px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.action-btn:hover:not(:disabled) {
-  opacity: 0.8;
-}
-
-.action-btn:disabled {
-  background: #CCC;
-  cursor: not-allowed;
-}
-
-.progress-section {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 12px;
-  color: #FF5722;
-  margin-bottom: 12px;
-}
-
-.spinner-sm {
-  width: 14px;
-  height: 14px;
-  border: 2px solid #FFCCBC;
-  border-top-color: #FF5722;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* System Logs */
-.system-logs {
-  background: #000;
-  color: #DDD;
-  padding: 16px;
-  font-family: 'JetBrains Mono', monospace;
-  border-top: 1px solid #222;
+/* Tags */
+.wb-tags { display: flex; flex-direction: column; gap: 8px; transition: opacity 0.2s; }
+.wb-tags.dim { opacity: 0.2; pointer-events: none; }
+.wb-tag-label {
+  font-size: 0.58rem; color: rgba(255,255,255,0.2);
+  letter-spacing: 0.12em;
+}
+.wb-tag-list { display: flex; flex-wrap: wrap; gap: 5px; }
+.wb-tag {
+  font-size: 0.68rem; padding: 3px 10px; border-radius: 3px;
+  cursor: pointer; transition: all 0.12s; letter-spacing: 0.03em;
+}
+.wb-tag--entity {
+  background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+.wb-tag--entity:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2); }
+.wb-tag--relation {
+  background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.35);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.wb-tag--relation:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
+
+/* Stats */
+.wb-stats {
+  display: flex; gap: 0;
+  border: 1px solid rgba(255,255,255,0.07); border-radius: 6px; overflow: hidden;
+}
+.wb-stat {
+  flex: 1; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px;
+  align-items: center; border-right: 1px solid rgba(255,255,255,0.07);
+}
+.wb-stat:last-child { border-right: none; }
+.wb-stat-val {
+  font-size: 1.3rem; font-weight: 700; color: #fff;
+}
+.wb-stat-key { font-size: 0.58rem; color: rgba(255,255,255,0.2); letter-spacing: 0.12em; }
+
+/* Progress bar */
+.wb-bar-wrap { display: flex; align-items: center; gap: 10px; }
+.wb-bar {
+  flex: 1; height: 2px; background: rgba(255,255,255,0.07); border-radius: 1px; overflow: hidden;
+}
+.wb-bar-fill { height: 100%; background: rgba(255,255,255,0.4); border-radius: 1px; transition: width 0.5s ease; }
+.wb-bar-pct { font-size: 0.65rem; color: rgba(255,255,255,0.3); min-width: 30px; text-align: right; }
+
+/* Action button */
+.wb-action {
+  display: flex; align-items: center; gap: 8px;
+  background: #fff; color: #000;
+  border: none; padding: 12px 20px; border-radius: 6px;
+  font-family: 'Roboto Mono', monospace; font-size: 0.76rem; font-weight: 600;
+  cursor: pointer; transition: opacity 0.12s; width: 100%; justify-content: center;
+}
+.wb-action:hover:not(:disabled) { opacity: 0.85; }
+.wb-action:disabled { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.2); cursor: not-allowed; }
+
+/* Overlay */
+.wb-overlay {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 10px;
+  animation: fadein 0.15s ease;
+}
+@keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+.wb-overlay-head { display: flex; align-items: center; gap: 10px; }
+.wb-overlay-badge {
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em;
+  background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5);
+  border: 1px solid rgba(255,255,255,0.1); padding: 2px 7px; border-radius: 3px;
+}
+.wb-overlay-name { font-size: 0.82rem; font-weight: 600; color: #fff; flex: 1; }
+.wb-overlay-close {
+  background: none; border: none; color: rgba(255,255,255,0.3);
+  font-size: 1.1rem; cursor: pointer; transition: color 0.1s;
+}
+.wb-overlay-close:hover { color: #fff; }
+.wb-overlay-desc { font-size: 0.75rem; color: rgba(255,255,255,0.4); line-height: 1.6; }
+.wb-overlay-section { display: flex; flex-direction: column; gap: 6px; }
+.wb-overlay-label { font-size: 0.58rem; color: rgba(255,255,255,0.2); letter-spacing: 0.12em; }
+
+.wb-attr-list { display: flex; flex-direction: column; gap: 4px; }
+.wb-attr { display: flex; align-items: baseline; gap: 8px; font-size: 0.72rem; }
+.wb-attr-name { color: rgba(255,255,255,0.6); font-weight: 600; }
+.wb-attr-type { color: rgba(255,255,255,0.2); font-size: 0.65rem; }
+.wb-attr-desc { color: rgba(255,255,255,0.3); flex: 1; }
+
+.wb-ex-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.wb-ex {
+  font-size: 0.65rem; padding: 2px 8px;
+  background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4);
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 3px;
+}
+
+.wb-conn-list { display: flex; flex-direction: column; gap: 4px; }
+.wb-conn {
+  display: flex; align-items: center; gap: 8px; font-size: 0.7rem;
+  color: rgba(255,255,255,0.5);
+}
+.wb-conn-arrow { color: rgba(255,255,255,0.2); }
+
+/* ── SYSTEM LOG ── */
+.wb-log {
   flex-shrink: 0;
+  background: #000; border-top: 1px solid rgba(255,255,255,0.07);
 }
+.wb-log-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.wb-log-label {
+  font-size: 0.58rem; color: rgba(255,255,255,0.2); letter-spacing: 0.12em;
+}
+.wb-log-id { font-size: 0.58rem; color: rgba(255,255,255,0.15); }
 
-.log-header {
-  display: flex;
-  justify-content: space-between;
-  border-bottom: 1px solid #333;
-  padding-bottom: 8px;
-  margin-bottom: 8px;
-  font-size: 10px;
-  color: #888;
+.wb-log-body {
+  height: 72px; overflow-y: auto; padding: 6px 16px;
+  display: flex; flex-direction: column; gap: 2px;
 }
+.wb-log-body::-webkit-scrollbar { width: 3px; }
+.wb-log-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); }
 
-.log-content {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  height: 80px; /* Approx 4 lines visible */
-  overflow-y: auto;
-  padding-right: 4px;
-}
-
-.log-content::-webkit-scrollbar {
-  width: 4px;
-}
-
-.log-content::-webkit-scrollbar-thumb {
-  background: #333;
-  border-radius: 2px;
-}
-
-.log-line {
-  font-size: 11px;
-  display: flex;
-  gap: 12px;
-  line-height: 1.5;
-}
-
-.log-time {
-  color: #666;
-  min-width: 75px;
-}
-
-.log-msg {
-  color: #CCC;
-  word-break: break-all;
-}
+.wb-log-line { display: flex; gap: 14px; font-size: 0.65rem; line-height: 1.5; }
+.wb-log-time { color: rgba(255,255,255,0.2); min-width: 80px; flex-shrink: 0; }
+.wb-log-msg { color: rgba(255,255,255,0.4); word-break: break-all; }
 </style>

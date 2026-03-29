@@ -3,7 +3,7 @@
     <!-- Header -->
     <header class="app-header">
       <div class="header-left">
-        <div class="brand" @click="router.push('/')">MIROFISH</div>
+        <div class="brand" @click="router.push('/')">KEPHALOS DATA</div>
       </div>
       
       <div class="header-center">
@@ -15,7 +15,7 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: '图谱', split: '双栏', workbench: '工作台' }[mode] }}
+            {{ { graph: 'Graph', split: 'Split', workbench: 'Workbench' }[mode] }}
           </button>
         </div>
       </div>
@@ -23,7 +23,7 @@
       <div class="header-right">
         <div class="workflow-step">
           <span class="step-num">Step 4/5</span>
-          <span class="step-name">报告生成</span>
+          <span class="step-name">Report Generation</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -47,7 +47,7 @@
         />
       </div>
 
-      <!-- Right Panel: Step4 报告生成 -->
+      <!-- Right Panel: Step4 Report Generation -->
       <div class="panel-wrapper right" :style="rightPanelStyle">
         <Step4Report
           :reportId="currentReportId"
@@ -78,7 +78,7 @@ const props = defineProps({
   reportId: String
 })
 
-// Layout State - 默认切换到工作台视角
+// Layout State - é»˜è®¤åˆ‡æ¢åˆ°å·¥ä½œå°è§†è§’
 const viewMode = ref('workbench')
 
 // Data State
@@ -139,28 +139,28 @@ const toggleMaximize = (target) => {
 // --- Data Logic ---
 const loadReportData = async () => {
   try {
-    addLog(`加载报告数据: ${currentReportId.value}`)
+    addLog(`åŠ è½½æŠ¥å‘Šæ•°æ®: ${currentReportId.value}`)
     
-    // 获取 report 信息以获取 simulation_id
+    // èŽ·å– report ä¿¡æ¯ä»¥èŽ·å– simulation_id
     const reportRes = await getReport(currentReportId.value)
     if (reportRes.success && reportRes.data) {
       const reportData = reportRes.data
       simulationId.value = reportData.simulation_id
       
       if (simulationId.value) {
-        // 获取 simulation 信息
+        // èŽ·å– simulation ä¿¡æ¯
         const simRes = await getSimulation(simulationId.value)
         if (simRes.success && simRes.data) {
           const simData = simRes.data
           
-          // 获取 project 信息
+          // èŽ·å– project ä¿¡æ¯
           if (simData.project_id) {
             const projRes = await getProject(simData.project_id)
             if (projRes.success && projRes.data) {
               projectData.value = projRes.data
-              addLog(`项目加载成功: ${projRes.data.project_id}`)
+              addLog(`é¡¹ç›®åŠ è½½æˆåŠŸ: ${projRes.data.project_id}`)
               
-              // 获取 graph 数据
+              // èŽ·å– graph æ•°æ®
               if (projRes.data.graph_id) {
                 await loadGraph(projRes.data.graph_id)
               }
@@ -169,10 +169,10 @@ const loadReportData = async () => {
         }
       }
     } else {
-      addLog(`获取报告信息失败: ${reportRes.error || '未知错误'}`)
+      addLog(`èŽ·å–æŠ¥å‘Šä¿¡æ¯å¤±è´¥: ${reportRes.error || 'æœªçŸ¥é”™è¯¯'}`)
     }
   } catch (err) {
-    addLog(`加载异常: ${err.message}`)
+    addLog(`åŠ è½½å¼‚å¸¸: ${err.message}`)
   }
 }
 
@@ -183,10 +183,10 @@ const loadGraph = async (graphId) => {
     const res = await getGraphData(graphId)
     if (res.success) {
       graphData.value = res.data
-      addLog('图谱数据加载成功')
+      addLog('Graph data loaded successfully')
     }
   } catch (err) {
-    addLog(`图谱加载失败: ${err.message}`)
+    addLog(`Failed to load graph: ${err.message}`)
   } finally {
     graphLoading.value = false
   }
@@ -207,7 +207,7 @@ watch(() => route.params.reportId, (newId) => {
 }, { immediate: true })
 
 onMounted(() => {
-  addLog('ReportView 初始化')
+  addLog('ReportView åˆå§‹åŒ–')
   loadReportData()
 })
 </script>
@@ -217,22 +217,23 @@ onMounted(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #FFF;
+  background: var(--page-bg);
   overflow: hidden;
   font-family: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
 }
 
 /* Header */
 .app-header {
-  height: 60px;
-  border-bottom: 1px solid #EAEAEA;
+  height: 56px;
+  border-bottom: 1px solid var(--line-strong);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  background: #FFF;
+  background: var(--page-bg);
   z-index: 100;
   position: relative;
+  color: var(--text-primary);
 }
 
 .header-center {
@@ -244,14 +245,16 @@ onMounted(() => {
 .brand {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 800;
-  font-size: 18px;
-  letter-spacing: 1px;
+  font-size: 1rem;
+  letter-spacing: 0.16em;
+  color: #f4ecdc;
+  text-shadow: 0 0 8px rgba(232, 224, 208, 0.2);
   cursor: pointer;
 }
 
 .view-switcher {
   display: flex;
-  background: #F5F5F5;
+  background: var(--panel-muted);
   padding: 4px;
   border-radius: 6px;
   gap: 4px;
@@ -263,16 +266,16 @@ onMounted(() => {
   padding: 6px 16px;
   font-size: 12px;
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary);
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .switch-btn.active {
-  background: #FFF;
-  color: #000;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  background: var(--panel-active);
+  color: var(--text-primary);
+  border: 1px solid var(--line-soft);
 }
 
 .header-right {
@@ -291,18 +294,18 @@ onMounted(() => {
 .step-num {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  color: #999;
+  color: var(--text-muted);
 }
 
 .step-name {
   font-weight: 700;
-  color: #000;
+  color: var(--text-primary);
 }
 
 .step-divider {
   width: 1px;
   height: 14px;
-  background-color: #E0E0E0;
+  background-color: var(--line-soft);
 }
 
 .status-indicator {
@@ -310,7 +313,7 @@ onMounted(() => {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -332,6 +335,7 @@ onMounted(() => {
   flex: 1;
   display: flex;
   position: relative;
+  color: var(--text-primary);
   overflow: hidden;
 }
 
@@ -343,6 +347,9 @@ onMounted(() => {
 }
 
 .panel-wrapper.left {
-  border-right: 1px solid #EAEAEA;
+  border-right: 1px solid var(--line-strong);
 }
 </style>
+
+
+

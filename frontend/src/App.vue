@@ -1,47 +1,41 @@
 <template>
   <router-view />
 </template>
-
-<script setup>
-// 使用 Vue Router 来管理页面
-</script>
-
+<script setup></script>
 <style>
-/* 全局样式重置 */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap');
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg:   #080808;
+  --bg2:  #0f0f0f;
+  --bg3:  #161616;
+  --bg4:  #1e1e1e;
+  --border:  rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --text:  #ffffff;
+  --text2: rgba(255,255,255,0.55);
+  --text3: rgba(255,255,255,0.28);
+  --text4: rgba(255,255,255,0.12);
+  --green: #22c55e;
+  --red:   #ef4444;
+  --amber: #f59e0b;
+  --blue:  #3b82f6;
+  --font:  'Roboto Mono', monospace;
+  --mono:  'Roboto Mono', 'JetBrains Mono', monospace;
 }
-
-#app {
-  font-family: 'JetBrains Mono', 'Space Grotesk', 'Noto Sans SC', monospace;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  color: #000000;
-  background-color: #ffffff;
+html, body { height: 100%; background: var(--bg); color: var(--text); }
+#app { font-family: var(--font); -webkit-font-smoothing: antialiased; background: var(--bg); color: var(--text); }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+button { font-family: inherit; cursor: pointer; }
+.step-card,.project-card,.modal-content,.card-content,.report-section-item,.timeline-content,.tools-card,.chat-panel,.survey-panel {
+  background: var(--bg3) !important; border-color: var(--border) !important; color: var(--text) !important;
 }
-
-/* 滚动条样式 */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+.card-header,.panel-header,.modal-header,.modal-actions,.modal-divider {
+  background: var(--bg2) !important; border-color: var(--border) !important;
 }
-
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #000000;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #333333;
-}
-
-/* 全局按钮样式 */
-button {
-  font-family: inherit;
-}
+.card-title,.section-title,.step-title,.phase-title,.btn-text,.modal-id { color: var(--text) !important; }
+.card-desc,.modal-label,.modal-file-name,.divider-text,.hint-text,.info-value { color: var(--text2) !important; }
+.card-footer,.modal-requirement,.modal-empty,.file-item,.files-empty { background: var(--bg2) !important; border-color: var(--border) !important; }
 </style>

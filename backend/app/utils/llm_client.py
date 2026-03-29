@@ -10,6 +10,19 @@ from openai import OpenAI
 
 from ..config import Config
 
+# Modelos do OpenRouter que suportam response_format json_object
+JSON_MODE_SUPPORTED_MODELS = [
+    "openai/", "anthropic/", "google/gemini", "mistralai/mistral-large",
+    "mistralai/mixtral", "qwen/qwen", "deepseek/deepseek-chat"
+]
+
+def supports_json_mode(model: str) -> bool:
+    """Verifica se o modelo suporta response_format json_object"""
+    for prefix in JSON_MODE_SUPPORTED_MODELS:
+        if prefix in model:
+            return True
+    return False
+
 
 class LLMClient:
     """LLM客户端"""
@@ -39,18 +52,6 @@ class LLMClient:
         max_tokens: int = 4096,
         response_format: Optional[Dict] = None
     ) -> str:
-        """
-        发送聊天请求
-        
-        Args:
-            messages: 消息列表
-            temperature: 温度参数
-            max_tokens: 最大token数
-            response_format: 响应格式（如JSON模式）
-            
-        Returns:
-            模型响应文本
-        """
         kwargs = {
             "model": self.model,
             "messages": messages,
@@ -58,12 +59,12 @@ class LLMClient:
             "max_tokens": max_tokens,
         }
         
-        if response_format:
+        # Só adiciona response_format se o modelo suportar
+        if response_format and supports_json_mode(self.model):
             kwargs["response_format"] = response_format
         
         response = self.client.chat.completions.create(**kwargs)
         content = response.choices[0].message.content
-        # 部分模型（如MiniMax M2.5）会在content中包含<think>思考内容，需要移除
         content = re.sub(r'<think>[\s\S]*?</think>', '', content).strip()
         return content
     
@@ -73,24 +74,22 @@ class LLMClient:
         temperature: float = 0.3,
         max_tokens: int = 4096
     ) -> Dict[str, Any]:
-        """
-        发送聊天请求并返回JSON
-        
-        Args:
-            messages: 消息列表
-            temperature: 温度参数
-            max_tokens: 最大token数
-            
-        Returns:
-            解析后的JSON对象
-        """
+        # Injeta instrução JSON no prompt quando modelo não suporta json_object
+        if not supports_json_mode(self.model):
+            messages = messages.copy()
+            last_msg = messages[-1]
+            messages[-1] = {
+                "role": last_msg["role"],
+                "content": last_msg["content"] + "\n\nIMPORTANT: Respond ONLY with valid JSON. No explanation, no markdown, no code blocks."
+            }
+
         response = self.chat(
             messages=messages,
             temperature=temperature,
             max_tokens=max_tokens,
             response_format={"type": "json_object"}
         )
-        # 清理markdown代码块标记
+
         cleaned_response = response.strip()
         cleaned_response = re.sub(r'^```(?:json)?\s*\n?', '', cleaned_response, flags=re.IGNORECASE)
         cleaned_response = re.sub(r'\n?```\s*$', '', cleaned_response)
@@ -100,4 +99,3 @@ class LLMClient:
             return json.loads(cleaned_response)
         except json.JSONDecodeError:
             raise ValueError(f"LLM返回的JSON格式无效: {cleaned_response}")
-

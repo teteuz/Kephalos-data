@@ -1,890 +1,694 @@
 <template>
-  <div class="home-container">
-    <!-- 顶部导航栏 -->
-    <nav class="navbar">
-      <div class="nav-brand">MIROFISH</div>
-      <div class="nav-links">
-        <a href="https://github.com/666ghj/MiroFish" target="_blank" class="github-link">
-          访问我们的Github主页 <span class="arrow">↗</span>
-        </a>
+  <div class="k">
+
+    <!-- NAV -->
+    <nav class="k-nav">
+      <div class="k-brand">
+        <img src="/kephalos-logo.png" alt="KEPHALOS" class="k-logo-img" />
+      </div>
+
+      <div class="k-nav-center">
+        <span class="k-nav-item">Platform</span>
+        <span class="k-nav-item">Research</span>
+        <span class="k-nav-item">Use Cases</span>
+      </div>
+
+      <div class="k-nav-right">
+        <div class="k-status">
+          <span class="k-status-dot"></span>
+          <span>Systems online</span>
+        </div>
+        <button class="k-nav-btn" @click="scrollToConsole">Run Simulation</button>
       </div>
     </nav>
 
-    <div class="main-content">
-      <!-- 上半部分：Hero 区域 -->
-      <section class="hero-section">
-        <div class="hero-left">
-          <div class="tag-row">
-            <span class="orange-tag">简洁通用的群体智能引擎</span>
-            <span class="version-text">/ v0.1-预览版</span>
-          </div>
-          
-          <h1 class="main-title">
-            上传任意报告<br>
-            <span class="gradient-text">即刻推演未来</span>
-          </h1>
-          
-          <div class="hero-desc">
-            <p>
-              即使只有一段文字，<span class="highlight-bold">MiroFish</span> 也能基于其中的现实种子，全自动生成与之对应的至多<span class="highlight-orange">百万级Agent</span>构成的平行世界。通过上帝视角注入变量，在复杂的群体交互中寻找动态环境下的<span class="highlight-code">“局部最优解”</span>
-            </p>
-            <p class="slogan-text">
-              让未来在 Agent 群中预演，让决策在百战后胜出<span class="blinking-cursor">_</span>
-            </p>
-          </div>
-           
-          <div class="decoration-square"></div>
+    <!-- HERO -->
+    <section class="k-hero">
+      <canvas ref="heroCanvas" class="k-canvas"></canvas>
+
+      <div class="k-hero-body">
+        <div class="k-eyebrow">
+          <span class="k-eyebrow-line"></span>
+          <span>MULTI-AGENT PREDICTION ENGINE</span>
         </div>
-        
-        <div class="hero-right">
-          <!-- Logo 区域 -->
-          <div class="logo-container">
-            <img src="../assets/logo/MiroFish_logo_left.jpeg" alt="MiroFish Logo" class="hero-logo" />
+
+        <h1 class="k-title">
+          What will people do<br>
+          <span class="k-title-dim">when it happens?</span>
+        </h1>
+
+        <p class="k-subtitle">
+          Upload any document. Kephalos builds a knowledge graph, generates up to 500 autonomous agents from real entities, and simulates how decisions, crises, and narratives unfold — before you commit to anything.
+        </p>
+
+        <div class="k-hero-cta">
+          <button class="k-btn-run" @click="scrollToConsole">
+            Run a simulation
+            <svg viewBox="0 0 16 16" fill="currentColor" width="13" height="13"><path d="M3 8l10 0M9 4l4 4-4 4"/></svg>
+          </button>
+          <div class="k-hero-meta">
+            <span>Up to 500 agents</span>
+            <span class="k-dot">·</span>
+            <span>Any document</span>
+            <span class="k-dot">·</span>
+            <span>Dual-platform</span>
           </div>
-          
-          <button class="scroll-down-btn" @click="scrollToBottom">
-            ↓
+        </div>
+      </div>
+
+      <!-- Floating data readout -->
+      <div class="k-readout">
+        <div class="k-readout-row" v-for="(r, i) in readouts" :key="i">
+          <span class="k-readout-key">{{ r.key }}</span>
+          <span class="k-readout-val" :class="r.cls">{{ r.val }}</span>
+        </div>
+        <div class="k-readout-bar">
+          <div class="k-readout-fill"></div>
+        </div>
+        <div class="k-readout-label">SYSTEM READY</div>
+      </div>
+    </section>
+
+    <!-- WHAT IT DOES — horizontal scroll of use cases -->
+    <section class="k-usecases">
+      <div class="k-uc-header">
+        <span class="k-label">WHERE IT WORKS</span>
+      </div>
+      <div class="k-uc-grid">
+        <div class="k-uc" v-for="uc in usecases" :key="uc.id">
+          <div class="k-uc-num">{{ uc.id }}</div>
+          <div class="k-uc-icon">{{ uc.icon }}</div>
+          <div class="k-uc-title">{{ uc.title }}</div>
+          <div class="k-uc-desc">{{ uc.desc }}</div>
+          <div class="k-uc-tag">{{ uc.tag }}</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONSOLE -->
+    <section class="k-console" id="console" ref="consoleRef">
+      <div class="k-console-left">
+        <div class="k-label">RUN A SIMULATION</div>
+        <h2 class="k-console-title">Feed the engine.<br>See what happens.</h2>
+        <p class="k-console-desc">Upload intelligence in any format. Set your objective. The engine extracts entities, builds a graph, and spawns a world of agents that play it out.</p>
+
+        <div class="k-pipeline">
+          <div class="k-pipe" v-for="(step, i) in pipelineSteps" :key="i">
+            <div class="k-pipe-num">{{ String(i+1).padStart(2,'0') }}</div>
+            <div class="k-pipe-name">{{ step.title }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="k-console-right">
+        <!-- Terminal header -->
+        <div class="k-term-header">
+          <div class="k-term-dots">
+            <span></span><span></span><span></span>
+          </div>
+          <span class="k-term-title">kephalos — engine console</span>
+          <span class="k-term-badge">v1.0</span>
+        </div>
+
+        <div class="k-term-body">
+          <!-- File input -->
+          <div class="k-term-section">
+            <div class="k-term-label">
+              <span class="k-term-num">01</span>
+              <span>INTELLIGENCE FEED</span>
+              <span class="k-term-hint">pdf · md · txt</span>
+            </div>
+
+            <div
+              class="k-dropzone"
+              :class="{ hover: isDragOver, filled: files.length > 0 }"
+              @dragover.prevent="isDragOver = true"
+              @dragleave.prevent="isDragOver = false"
+              @drop.prevent="handleDrop"
+              @click="$refs.fileInput.click()"
+            >
+              <input ref="fileInput" type="file" multiple accept=".pdf,.md,.txt" @change="handleFileSelect" style="display:none" />
+              <div v-if="!files.length" class="k-drop-empty">
+                <div class="k-drop-icon">
+                  <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+                  </svg>
+                </div>
+                <span>Drop document or click to browse</span>
+              </div>
+              <div v-else class="k-drop-files">
+                <div class="k-drop-file" v-for="(f, i) in files" :key="i">
+                  <span class="k-file-ext">{{ f.name.split('.').pop() }}</span>
+                  <span class="k-file-name">{{ f.name }}</span>
+                  <button class="k-file-rm" @click.stop="files.splice(i,1)">×</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Directive -->
+          <div class="k-term-section">
+            <div class="k-term-label">
+              <span class="k-term-num">02</span>
+              <span>SIMULATION DIRECTIVE</span>
+              <div class="k-tpls">
+                <button
+                  v-for="tpl in directiveTemplates" :key="tpl.id"
+                  :class="['k-tpl', { on: activeTpl === tpl.id }]"
+                  @click.stop="applyTemplate(tpl)"
+                >{{ tpl.short }}</button>
+              </div>
+            </div>
+
+            <div class="k-textarea-wrap">
+              <textarea
+                v-model="formData.simulationRequirement"
+                class="k-textarea"
+                :placeholder="currentPlaceholder"
+                rows="5"
+                :disabled="loading"
+              ></textarea>
+              <span class="k-textarea-ver">KEPHALOS-V1.0</span>
+            </div>
+          </div>
+
+          <!-- Launch -->
+          <button class="k-launch" :disabled="!canSubmit || loading" @click="startSimulation">
+            <span class="k-launch-pre">$</span>
+            <span>{{ loading ? 'initializing...' : 'kephalos run --parallel --agents=max' }}</span>
+            <svg v-if="!loading" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" width="14" height="14"><line x1="3" y1="8" x2="13" y2="8"/><polyline points="9 4 13 8 9 12"/></svg>
           </button>
         </div>
-      </section>
+      </div>
+    </section>
 
-      <!-- 下半部分：双栏布局 -->
-      <section class="dashboard-section">
-        <!-- 左栏：状态与步骤 -->
-        <div class="left-panel">
-          <div class="panel-header">
-            <span class="status-dot">■</span> 系统状态
-          </div>
-          
-          <h2 class="section-title">准备就绪</h2>
-          <p class="section-desc">
-            预测引擎待命中，可上传多份非结构化数据以初始化模拟序列
-          </p>
-          
-          <!-- 数据指标卡片 -->
-          <div class="metrics-row">
-            <div class="metric-card">
-              <div class="metric-value">低成本</div>
-              <div class="metric-label">常规模拟平均5$/次</div>
-            </div>
-            <div class="metric-card">
-              <div class="metric-value">高可用</div>
-              <div class="metric-label">最多百万级Agent模拟</div>
-            </div>
-          </div>
-
-          <!-- 项目模拟步骤介绍 (新增区域) -->
-          <div class="steps-container">
-            <div class="steps-header">
-               <span class="diamond-icon">◇</span> 工作流序列
-            </div>
-            <div class="workflow-list">
-              <div class="workflow-item">
-                <span class="step-num">01</span>
-                <div class="step-info">
-                  <div class="step-title">图谱构建</div>
-                  <div class="step-desc">现实种子提取 & 个体与群体记忆注入 & GraphRAG构建</div>
-                </div>
-              </div>
-              <div class="workflow-item">
-                <span class="step-num">02</span>
-                <div class="step-info">
-                  <div class="step-title">环境搭建</div>
-                  <div class="step-desc">实体关系抽取 & 人设生成 & 环境配置Agent注入仿真参数</div>
-                </div>
-              </div>
-              <div class="workflow-item">
-                <span class="step-num">03</span>
-                <div class="step-info">
-                  <div class="step-title">开始模拟</div>
-                  <div class="step-desc">双平台并行模拟 & 自动解析预测需求 & 动态更新时序记忆</div>
-                </div>
-              </div>
-              <div class="workflow-item">
-                <span class="step-num">04</span>
-                <div class="step-info">
-                  <div class="step-title">报告生成</div>
-                  <div class="step-desc">ReportAgent拥有丰富的工具集与模拟后环境进行深度交互</div>
-                </div>
-              </div>
-              <div class="workflow-item">
-                <span class="step-num">05</span>
-                <div class="step-info">
-                  <div class="step-title">深度互动</div>
-                  <div class="step-desc">与模拟世界中的任意一位进行对话 & 与ReportAgent进行对话</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 右栏：交互控制台 -->
-        <div class="right-panel">
-          <div class="console-box">
-            <!-- 上传区域 -->
-            <div class="console-section">
-              <div class="console-header">
-                <span class="console-label">01 / 现实种子</span>
-                <span class="console-meta">支持格式: PDF, MD, TXT</span>
-              </div>
-              
-              <div 
-                class="upload-zone"
-                :class="{ 'drag-over': isDragOver, 'has-files': files.length > 0 }"
-                @dragover.prevent="handleDragOver"
-                @dragleave.prevent="handleDragLeave"
-                @drop.prevent="handleDrop"
-                @click="triggerFileInput"
-              >
-                <input
-                  ref="fileInput"
-                  type="file"
-                  multiple
-                  accept=".pdf,.md,.txt"
-                  @change="handleFileSelect"
-                  style="display: none"
-                  :disabled="loading"
-                />
-                
-                <div v-if="files.length === 0" class="upload-placeholder">
-                  <div class="upload-icon">↑</div>
-                  <div class="upload-title">拖拽文件上传</div>
-                  <div class="upload-hint">或点击浏览文件系统</div>
-                </div>
-                
-                <div v-else class="file-list">
-                  <div v-for="(file, index) in files" :key="index" class="file-item">
-                    <span class="file-icon">📄</span>
-                    <span class="file-name">{{ file.name }}</span>
-                    <button @click.stop="removeFile(index)" class="remove-btn">×</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- 分割线 -->
-            <div class="console-divider">
-              <span>输入参数</span>
-            </div>
-
-            <!-- 输入区域 -->
-            <div class="console-section">
-              <div class="console-header">
-                <span class="console-label">>_ 02 / 模拟提示词</span>
-              </div>
-              <div class="input-wrapper">
-                <textarea
-                  v-model="formData.simulationRequirement"
-                  class="code-input"
-                  placeholder="// 用自然语言输入模拟或预测需求（例.武大若发布撤销肖某处分的公告，会引发什么舆情走向）"
-                  rows="6"
-                  :disabled="loading"
-                ></textarea>
-                <div class="model-badge">引擎: MiroFish-V1.0</div>
-              </div>
-            </div>
-
-            <!-- 启动按钮 -->
-            <div class="console-section btn-section">
-              <button 
-                class="start-engine-btn"
-                @click="startSimulation"
-                :disabled="!canSubmit || loading"
-              >
-                <span v-if="!loading">启动引擎</span>
-                <span v-else>初始化中...</span>
-                <span class="btn-arrow">→</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- 历史项目数据库 -->
-      <HistoryDatabase />
-    </div>
+    <HistoryDatabase />
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import HistoryDatabase from '../components/HistoryDatabase.vue'
 
 const router = useRouter()
-
-// 表单数据
-const formData = ref({
-  simulationRequirement: ''
-})
-
-// 文件列表
-const files = ref([])
-
-// 状态
-const loading = ref(false)
-const error = ref('')
-const isDragOver = ref(false)
-
-// 文件输入引用
+const consoleRef = ref(null)
+const heroCanvas = ref(null)
 const fileInput = ref(null)
 
-// 计算属性:是否可以提交
-const canSubmit = computed(() => {
-  return formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
-})
+const readouts = [
+  { key: 'ENGINE', val: 'ONLINE', cls: 'green' },
+  { key: 'AGENTS', val: 'UP TO 500', cls: '' },
+  { key: 'PLATFORMS', val: 'DUAL', cls: '' },
+  { key: 'VERSION', val: 'v0.1-PREVIEW', cls: '' },
+]
 
-// 触发文件选择
-const triggerFileInput = () => {
-  if (!loading.value) {
-    fileInput.value?.click()
-  }
+const usecases = [
+  { id: '01', icon: '◈', title: 'Financial Markets', desc: 'Simulate how investors, media, and analysts react to announcements before you make them. Identify the narrative that dominates.', tag: 'MARKET INTELLIGENCE' },
+  { id: '02', icon: '◆', title: 'Policy & Governance', desc: 'Stress-test legislation or institutional decisions against simulated stakeholder populations before public release.', tag: 'POLICY SIMULATION' },
+  { id: '03', icon: '◇', title: 'Crisis Management', desc: 'Run counterfactual scenarios. What if you responded differently at decision point X? Find the optimal path through uncertainty.', tag: 'COUNTERFACTUAL ANALYSIS' },
+]
+
+const pipelineSteps = [
+  { icon: '◈', title: 'Graph Construction', desc: 'Reality seeds extracted and injected into a GraphRAG knowledge graph with temporal memory.' },
+  { icon: '◉', title: 'Environment Setup', desc: 'Entities become agents. Personas, relationships, and parameters auto-generated.' },
+  { icon: '▶', title: 'Simulation Run', desc: 'Dual-platform parallel simulation across Twitter-like and Reddit-like environments.' },
+  { icon: '◆', title: 'Report Generation', desc: 'ReportAgent performs deep post-simulation analysis with full tool access.' },
+  { icon: '◇', title: 'Deep Interaction', desc: 'Converse with any agent or interrogate the ReportAgent directly.' },
+]
+
+const directiveTemplates = [
+  { id: 'decision', short: 'DECISION', label: 'Optimize decision', text: 'Given this scenario, what is the optimal decision to maximize positive outcomes and minimize risk? Simulate how different stakeholder groups react and identify the strategy with the best risk-reward profile.' },
+  { id: 'narrative', short: 'NARRATIVE', label: 'Narrative spread', text: 'Simulate how narratives and public opinion will evolve across social platforms over the next 72 hours. Which information spreads fastest? Which groups amplify or defuse the situation?' },
+  { id: 'crisis', short: 'CRISIS', label: 'Crisis response', text: 'If this crisis escalates, simulate the institutional response strategies and their outcomes. Which approach best preserves reputation and restores stakeholder trust?' },
+  { id: 'market', short: 'MARKET', label: 'Market reaction', text: 'Simulate how market participants — investors, analysts, competitors, media — will react to this event. What narrative shifts emerge?' },
+]
+
+const activeTpl = ref(null)
+const formData = ref({ simulationRequirement: '' })
+const files = ref([])
+const loading = ref(false)
+const isDragOver = ref(false)
+
+const currentPlaceholder = '// describe your simulation objective\n// e.g. given this scenario, what is the optimal decision to maximize results and minimize risk?'
+
+const canSubmit = computed(() =>
+  formData.value.simulationRequirement.trim() !== '' && files.value.length > 0
+)
+
+const applyTemplate = (tpl) => {
+  activeTpl.value = tpl.id
+  formData.value.simulationRequirement = tpl.text
 }
 
-// 处理文件选择
-const handleFileSelect = (event) => {
-  const selectedFiles = Array.from(event.target.files)
-  addFiles(selectedFiles)
+const handleFileSelect = (e) => { addFiles(Array.from(e.target.files)) }
+const handleDrop = (e) => { isDragOver.value = false; addFiles(Array.from(e.dataTransfer.files)) }
+const addFiles = (f) => {
+  files.value.push(...f.filter(x => ['pdf','md','txt'].includes(x.name.split('.').pop().toLowerCase())))
 }
 
-// 处理拖拽相关
-const handleDragOver = (e) => {
-  if (!loading.value) {
-    isDragOver.value = true
-  }
-}
+const scrollToConsole = () => document.getElementById('console')?.scrollIntoView({ behavior: 'smooth' })
 
-const handleDragLeave = (e) => {
-  isDragOver.value = false
-}
-
-const handleDrop = (e) => {
-  isDragOver.value = false
-  if (loading.value) return
-  
-  const droppedFiles = Array.from(e.dataTransfer.files)
-  addFiles(droppedFiles)
-}
-
-// 添加文件
-const addFiles = (newFiles) => {
-  const validFiles = newFiles.filter(file => {
-    const ext = file.name.split('.').pop().toLowerCase()
-    return ['pdf', 'md', 'txt'].includes(ext)
-  })
-  files.value.push(...validFiles)
-}
-
-// 移除文件
-const removeFile = (index) => {
-  files.value.splice(index, 1)
-}
-
-// 滚动到底部
-const scrollToBottom = () => {
-  window.scrollTo({
-    top: document.body.scrollHeight,
-    behavior: 'smooth'
-  })
-}
-
-// 开始模拟 - 立即跳转，API调用在Process页面进行
 const startSimulation = () => {
   if (!canSubmit.value || loading.value) return
-  
-  // 存储待上传的数据
   import('../store/pendingUpload.js').then(({ setPendingUpload }) => {
     setPendingUpload(files.value, formData.value.simulationRequirement)
-    
-    // 立即跳转到Process页面（使用特殊标识表示新建项目）
-    router.push({
-      name: 'Process',
-      params: { projectId: 'new' }
-    })
+    router.push({ name: 'Process', params: { projectId: 'new' } })
   })
 }
+
+// Minimal particle field
+let raf = null
+onMounted(() => {
+  const c = heroCanvas.value
+  if (!c) return
+  const resize = () => { c.width = c.offsetWidth; c.height = c.offsetHeight }
+  resize()
+  window.addEventListener('resize', resize)
+
+  const pts = Array.from({ length: 80 }, () => ({
+    x: Math.random(), y: Math.random(),
+    vx: (Math.random() - 0.5) * 0.0003,
+    vy: (Math.random() - 0.5) * 0.0003,
+    r: Math.random() * 0.8 + 0.2
+  }))
+
+  const draw = () => {
+    if (!c) return
+    const ctx = c.getContext('2d')
+    const W = c.width, H = c.height
+    ctx.clearRect(0, 0, W, H)
+
+    pts.forEach(p => {
+      p.x += p.vx; p.y += p.vy
+      if (p.x < 0) p.x = 1; if (p.x > 1) p.x = 0
+      if (p.y < 0) p.y = 1; if (p.y > 1) p.y = 0
+    })
+
+    pts.forEach((a, i) => {
+      pts.forEach((b, j) => {
+        if (j <= i) return
+        const dx = (a.x - b.x) * W, dy = (a.y - b.y) * H
+        const d = Math.sqrt(dx * dx + dy * dy)
+        if (d > 140) return
+        ctx.beginPath()
+        ctx.moveTo(a.x * W, a.y * H)
+        ctx.lineTo(b.x * W, b.y * H)
+        ctx.strokeStyle = `rgba(255,255,255,${(1 - d / 140) * 0.04})`
+        ctx.lineWidth = 1
+        ctx.stroke()
+      })
+      ctx.beginPath()
+      ctx.arc(a.x * W, a.y * H, a.r, 0, Math.PI * 2)
+      ctx.fillStyle = 'rgba(255,255,255,0.15)'
+      ctx.fill()
+    })
+
+    raf = requestAnimationFrame(draw)
+  }
+  draw()
+})
+onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
 </script>
 
 <style scoped>
-/* 全局变量与重置 */
-:root {
-  --black: #000000;
-  --white: #FFFFFF;
-  --orange: #FF4500;
-  --gray-light: #F5F5F5;
-  --gray-text: #666666;
-  --border: #E5E5E5;
-  /* 
-    使用 Space Grotesk 作为主要标题字体，JetBrains Mono 作为代码/标签字体
-    确保已在 index.html 引入这些 Google Fonts 
-  */
-  --font-mono: 'JetBrains Mono', monospace;
-  --font-sans: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
-  --font-cn: 'Noto Sans SC', system-ui, sans-serif;
-}
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap');
 
-.home-container {
+/* ─── BASE ─── */
+.k {
   min-height: 100vh;
-  background: var(--white);
-  font-family: var(--font-sans);
-  color: var(--black);
+  background: #080808;
+  color: #fff;
+  font-family: 'Roboto Mono', monospace;
+  --mono: 'Roboto Mono', 'JetBrains Mono', monospace;
 }
 
-/* 顶部导航 */
-.navbar {
-  height: 60px;
-  background: var(--black);
-  color: var(--white);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+/* ─── NAV ─── */
+.k-nav {
+  position: sticky; top: 0; z-index: 100;
+  height: 56px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  background: rgba(8,8,8,0.9);
+  backdrop-filter: blur(24px);
+  display: flex; align-items: center; justify-content: space-between;
   padding: 0 40px;
 }
 
-.nav-brand {
-  font-family: var(--font-mono);
-  font-weight: 800;
-  letter-spacing: 1px;
-  font-size: 1.2rem;
-}
+.k-brand { display: flex; align-items: center; cursor: pointer; }
+.k-logo-img { height: 64px; width: auto; display: block; }
 
-.nav-links {
-  display: flex;
-  align-items: center;
+.k-nav-center { display: flex; gap: 2px; }
+.k-nav-item {
+  font-size: 0.84rem; color: rgba(255,255,255,0.38);
+  padding: 6px 14px; border-radius: 6px;
+  cursor: pointer; transition: color 0.12s, background 0.12s;
 }
+.k-nav-item:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.04); }
 
-.github-link {
-  color: var(--white);
-  text-decoration: none;
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  font-weight: 500;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: opacity 0.2s;
+.k-nav-right { display: flex; align-items: center; gap: 20px; }
+
+.k-status {
+  display: flex; align-items: center; gap: 7px;
+  font-family: var(--mono); font-size: 0.66rem;
+  letter-spacing: 0.06em; color: rgba(255,255,255,0.3);
 }
-
-.github-link:hover {
-  opacity: 0.8;
+.k-status-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: #22c55e; box-shadow: 0 0 6px #22c55e;
+  animation: pulse 2.5s infinite;
 }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-.arrow {
-  font-family: sans-serif;
+.k-nav-btn {
+  background: #fff; color: #000;
+  border: none; padding: 7px 16px;
+  font-size: 0.82rem; font-weight: 600;
+  border-radius: 6px; cursor: pointer;
+  font-family: 'Roboto Mono', monospace;
+  transition: opacity 0.12s;
 }
+.k-nav-btn:hover { opacity: 0.85; }
 
-/* 主要内容区 */
-.main-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 60px 40px;
-}
-
-/* Hero 区域 */
-.hero-section {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 80px;
+/* ─── HERO ─── */
+.k-hero {
   position: relative;
-}
-
-.hero-left {
-  flex: 1;
-  padding-right: 60px;
-}
-
-.tag-row {
-  display: flex;
+  min-height: 88vh;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  gap: 15px;
-  margin-bottom: 25px;
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-}
-
-.orange-tag {
-  background: var(--orange);
-  color: var(--white);
-  padding: 4px 10px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  font-size: 0.75rem;
-}
-
-.version-text {
-  color: #999;
-  font-weight: 500;
-  letter-spacing: 0.5px;
-}
-
-.main-title {
-  font-size: 4.5rem;
-  line-height: 1.2;
-  font-weight: 500;
-  margin: 0 0 40px 0;
-  letter-spacing: -2px;
-  color: var(--black);
-}
-
-.gradient-text {
-  background: linear-gradient(90deg, #000000 0%, #444444 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  display: inline-block;
-}
-
-.hero-desc {
-  font-size: 1.05rem;
-  line-height: 1.8;
-  color: var(--gray-text);
-  max-width: 640px;
-  margin-bottom: 50px;
-  font-weight: 400;
-  text-align: justify;
-}
-
-.hero-desc p {
-  margin-bottom: 1.5rem;
-}
-
-.highlight-bold {
-  color: var(--black);
-  font-weight: 700;
-}
-
-.highlight-orange {
-  color: var(--orange);
-  font-weight: 700;
-  font-family: var(--font-mono);
-}
-
-.highlight-code {
-  background: rgba(0, 0, 0, 0.05);
-  padding: 2px 6px;
-  border-radius: 2px;
-  font-family: var(--font-mono);
-  font-size: 0.9em;
-  color: var(--black);
-  font-weight: 600;
-}
-
-.slogan-text {
-  font-size: 1.2rem;
-  font-weight: 520;
-  color: var(--black);
-  letter-spacing: 1px;
-  border-left: 3px solid var(--orange);
-  padding-left: 15px;
-  margin-top: 20px;
-}
-
-.blinking-cursor {
-  color: var(--orange);
-  animation: blink 1s step-end infinite;
-  font-weight: 700;
-}
-
-@keyframes blink {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-}
-
-.decoration-square {
-  width: 16px;
-  height: 16px;
-  background: var(--orange);
-}
-
-.hero-right {
-  flex: 0.8;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-
-.logo-container {
-  width: 100%;
-  display: flex;
-  justify-content: flex-end;
-  padding-right: 40px;
-}
-
-.hero-logo {
-  max-width: 500px; /* 调整logo大小 */
-  width: 100%;
-}
-
-.scroll-down-btn {
-  width: 40px;
-  height: 40px;
-  border: 1px solid var(--border);
-  background: transparent;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  color: var(--orange);
-  font-size: 1.2rem;
-  transition: all 0.2s;
-}
-
-.scroll-down-btn:hover {
-  border-color: var(--orange);
-}
-
-/* Dashboard 双栏布局 */
-.dashboard-section {
-  display: flex;
+  padding: 0 40px 0 80px;
   gap: 60px;
-  border-top: 1px solid var(--border);
-  padding-top: 60px;
-  align-items: flex-start;
-}
-
-.dashboard-section .left-panel,
-.dashboard-section .right-panel {
-  display: flex;
-  flex-direction: column;
-}
-
-/* 左侧面板 */
-.left-panel {
-  flex: 0.8;
-}
-
-.panel-header {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: #999;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 20px;
-}
-
-.status-dot {
-  color: var(--orange);
-  font-size: 0.8rem;
-}
-
-.section-title {
-  font-size: 2rem;
-  font-weight: 520;
-  margin: 0 0 15px 0;
-}
-
-.section-desc {
-  color: var(--gray-text);
-  margin-bottom: 25px;
-  line-height: 1.6;
-}
-
-.metrics-row {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 15px;
-}
-
-.metric-card {
-  border: 1px solid var(--border);
-  padding: 20px 30px;
-  min-width: 150px;
-}
-
-.metric-value {
-  font-family: var(--font-mono);
-  font-size: 1.8rem;
-  font-weight: 520;
-  margin-bottom: 5px;
-}
-
-.metric-label {
-  font-size: 0.85rem;
-  color: #999;
-}
-
-/* 项目模拟步骤介绍 */
-.steps-container {
-  border: 1px solid var(--border);
-  padding: 30px;
-  position: relative;
-}
-
-.steps-header {
-  font-family: var(--font-mono);
-  font-size: 0.8rem;
-  color: #999;
-  margin-bottom: 25px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.diamond-icon {
-  font-size: 1.2rem;
-  line-height: 1;
-}
-
-.workflow-list {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.workflow-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-}
-
-.step-num {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  color: var(--black);
-  opacity: 0.3;
-}
-
-.step-info {
-  flex: 1;
-}
-
-.step-title {
-  font-weight: 520;
-  font-size: 1rem;
-  margin-bottom: 4px;
-}
-
-.step-desc {
-  font-size: 0.85rem;
-  color: var(--gray-text);
-}
-
-/* 右侧交互控制台 */
-.right-panel {
-  flex: 1.2;
-}
-
-.console-box {
-  border: 1px solid #CCC; /* 外部实线 */
-  padding: 8px; /* 内边距形成双重边框感 */
-}
-
-.console-section {
-  padding: 20px;
-}
-
-.console-section.btn-section {
-  padding-top: 0;
-}
-
-.console-header {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 15px;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: #666;
-}
-
-.upload-zone {
-  border: 1px dashed #CCC;
-  height: 200px;
-  overflow-y: auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s;
-  background: #FAFAFA;
-}
-
-.upload-zone.has-files {
-  align-items: flex-start;
-}
-
-.upload-zone:hover {
-  background: #F0F0F0;
-  border-color: #999;
-}
-
-.upload-placeholder {
-  text-align: center;
-}
-
-.upload-icon {
-  width: 40px;
-  height: 40px;
-  border: 1px solid #DDD;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 15px;
-  color: #999;
-}
-
-.upload-title {
-  font-weight: 500;
-  font-size: 0.9rem;
-  margin-bottom: 5px;
-}
-
-.upload-hint {
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: #999;
-}
-
-.file-list {
-  width: 100%;
-  padding: 15px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.file-item {
-  display: flex;
-  align-items: center;
-  background: var(--white);
-  padding: 8px 12px;
-  border: 1px solid #EEE;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-}
-
-.file-name {
-  flex: 1;
-  margin: 0 10px;
-}
-
-.remove-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 1.2rem;
-  color: #999;
-}
-
-.console-divider {
-  display: flex;
-  align-items: center;
-  margin: 10px 0;
-}
-
-.console-divider::before,
-.console-divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: #EEE;
-}
-
-.console-divider span {
-  padding: 0 15px;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: #BBB;
-  letter-spacing: 1px;
-}
-
-.input-wrapper {
-  position: relative;
-  border: 1px solid #DDD;
-  background: #FAFAFA;
-}
-
-.code-input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  padding: 20px;
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  line-height: 1.6;
-  resize: vertical;
-  outline: none;
-  min-height: 150px;
-}
-
-.model-badge {
-  position: absolute;
-  bottom: 10px;
-  right: 15px;
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  color: #AAA;
-}
-
-.start-engine-btn {
-  width: 100%;
-  background: var(--black);
-  color: var(--white);
-  border: none;
-  padding: 20px;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 1.1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  letter-spacing: 1px;
-  position: relative;
   overflow: hidden;
 }
 
-/* 可点击状态（非禁用） */
-.start-engine-btn:not(:disabled) {
-  background: var(--black);
-  border: 1px solid var(--black);
-  animation: pulse-border 2s infinite;
+.k-canvas {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
 }
 
-.start-engine-btn:hover:not(:disabled) {
-  background: var(--orange);
-  border-color: var(--orange);
-  transform: translateY(-2px);
+.k-hero-body {
+  position: relative; z-index: 2;
+  max-width: 620px;
+  display: flex; flex-direction: column; gap: 0;
 }
 
-.start-engine-btn:active:not(:disabled) {
-  transform: translateY(0);
+.k-eyebrow {
+  display: flex; align-items: center; gap: 14px;
+  font-family: var(--mono); font-size: 0.66rem;
+  letter-spacing: 0.14em; color: rgba(255,255,255,0.3);
+  margin-bottom: 28px;
+}
+.k-eyebrow-line { width: 24px; height: 1px; background: rgba(255,255,255,0.2); }
+
+.k-title {
+  font-size: clamp(2.8rem, 5.5vw, 4.8rem);
+  font-weight: 800; line-height: 1.06;
+  letter-spacing: -0.04em; color: #fff;
+  margin-bottom: 20px;
+}
+.k-title-dim { color: rgba(255,255,255,0.48); font-weight: 300; }
+
+.k-subtitle {
+  font-size: 0.95rem; line-height: 1.75;
+  color: rgba(255,255,255,0.4); font-weight: 400;
+  margin-bottom: 36px; max-width: 500px;
 }
 
-.start-engine-btn:disabled {
-  background: #E5E5E5;
-  color: #999;
-  cursor: not-allowed;
-  transform: none;
-  border: 1px solid #E5E5E5;
+.k-hero-cta { display: flex; flex-direction: column; gap: 16px; }
+
+.k-btn-run {
+  display: inline-flex; align-items: center; gap: 10px;
+  background: #fff; color: #000;
+  border: none; padding: 13px 24px;
+  font-size: 0.88rem; font-weight: 700;
+  border-radius: 8px; cursor: pointer;
+  font-family: 'Roboto Mono', monospace;
+  width: fit-content;
+  transition: all 0.12s;
+}
+.k-btn-run:hover { background: rgba(255,255,255,0.88); transform: translateY(-1px); }
+.k-btn-run svg { stroke: #000; }
+
+.k-hero-meta {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 0.66rem;
+  color: rgba(255,255,255,0.25); letter-spacing: 0.04em;
+}
+.k-dot { color: rgba(255,255,255,0.12); }
+
+/* Floating readout panel */
+.k-readout {
+  position: relative; z-index: 2;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(20px);
+  border-radius: 10px;
+  padding: 20px 24px;
+  min-width: 220px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.k-readout-row {
+  display: flex; justify-content: space-between; align-items: center;
+}
+.k-readout-key {
+  font-family: var(--mono); font-size: 0.62rem;
+  color: rgba(255,255,255,0.28); letter-spacing: 0.1em;
+}
+.k-readout-val {
+  font-family: var(--mono); font-size: 0.72rem;
+  color: rgba(255,255,255,0.65); font-weight: 500;
+}
+.k-readout-val.green { color: #22c55e; }
+
+.k-readout-bar {
+  height: 2px; background: rgba(255,255,255,0.06);
+  border-radius: 1px; margin-top: 4px; overflow: hidden;
+}
+.k-readout-fill {
+  height: 100%; width: 100%;
+  background: linear-gradient(90deg, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+  border-radius: 1px;
+  animation: scan 3s ease-in-out infinite;
+}
+@keyframes scan { 0%,100%{transform:translateX(-100%)} 50%{transform:translateX(100%)} }
+
+.k-readout-label {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: rgba(255,255,255,0.2); letter-spacing: 0.14em; text-align: right;
 }
 
-/* 引导动画：微妙的边框脉冲 */
-@keyframes pulse-border {
-  0% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.2); }
-  70% { box-shadow: 0 0 0 6px rgba(0, 0, 0, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); }
+/* ─── USE CASES ─── */
+.k-usecases {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 64px 80px;
+}
+.k-uc-header {
+  margin-bottom: 40px;
+}
+.k-label {
+  font-family: var(--mono); font-size: 0.62rem;
+  letter-spacing: 0.16em; color: rgba(255,255,255,0.25);
 }
 
-/* 响应式适配 */
-@media (max-width: 1024px) {
-  .dashboard-section {
-    flex-direction: column;
-  }
-  
-  .hero-section {
-    flex-direction: column;
-  }
-  
-  .hero-left {
-    padding-right: 0;
-    margin-bottom: 40px;
-  }
-  
-  .hero-logo {
-    max-width: 200px;
-    margin-bottom: 20px;
-  }
+.k-uc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.k-uc {
+  background: #080808;
+  padding: 32px 28px;
+  display: flex; flex-direction: column; gap: 12px;
+  transition: background 0.15s;
+}
+.k-uc:hover { background: rgba(255,255,255,0.02); }
+
+.k-uc-num {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: rgba(255,255,255,0.18); letter-spacing: 0.1em;
+}
+.k-uc-icon { font-size: 1.2rem; color: rgba(255,255,255,0.5); }
+.k-uc-title { font-size: 1rem; font-weight: 700; color: #fff; letter-spacing: -0.02em; }
+.k-uc-desc { font-size: 0.8rem; color: rgba(255,255,255,0.38); line-height: 1.65; flex: 1; }
+.k-uc-tag {
+  font-family: var(--mono); font-size: 0.58rem;
+  letter-spacing: 0.1em; color: rgba(255,255,255,0.2);
+  border: 1px solid rgba(255,255,255,0.08);
+  padding: 3px 8px; border-radius: 4px; width: fit-content;
+}
+
+/* ─── CONSOLE ─── */
+.k-console {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 80px;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 80px;
+  align-items: start;
+}
+
+.k-console-left { padding-top: 4px; }
+
+.k-console-title {
+  font-size: 2rem; font-weight: 800;
+  letter-spacing: -0.03em; line-height: 1.15; color: #fff;
+  margin: 14px 0 16px;
+}
+.k-console-desc {
+  font-size: 0.88rem; color: rgba(255,255,255,0.38);
+  line-height: 1.75; margin-bottom: 36px; max-width: 380px;
+}
+
+.k-pipeline { display: flex; flex-direction: column; gap: 0; }
+.k-pipe {
+  display: flex; align-items: center; gap: 16px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.k-pipe:last-child { border-bottom: 1px solid rgba(255,255,255,0.06); }
+.k-pipe-num {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: rgba(255,255,255,0.2); letter-spacing: 0.1em; min-width: 24px;
+}
+.k-pipe-name { font-size: 0.82rem; color: rgba(255,255,255,0.45); }
+
+/* Terminal card */
+.k-console-right {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px; overflow: hidden;
+  background: rgba(255,255,255,0.02);
+}
+
+.k-term-header {
+  background: rgba(255,255,255,0.03);
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  padding: 11px 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.k-term-dots { display: flex; gap: 5px; }
+.k-term-dots span {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: rgba(255,255,255,0.08);
+}
+.k-term-dots span:first-child { background: rgba(255,255,255,0.25); }
+.k-term-title {
+  font-family: var(--mono); font-size: 0.62rem;
+  color: rgba(255,255,255,0.22); letter-spacing: 0.06em; flex: 1; margin-left: 4px;
+}
+.k-term-badge {
+  font-family: var(--mono); font-size: 0.58rem;
+  color: rgba(255,255,255,0.3);
+}
+
+.k-term-body { padding: 20px; display: flex; flex-direction: column; gap: 20px; }
+
+.k-term-section { display: flex; flex-direction: column; gap: 10px; }
+
+.k-term-label {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--mono); font-size: 0.6rem;
+  letter-spacing: 0.1em; color: rgba(255,255,255,0.28);
+}
+.k-term-num {
+  background: rgba(255,255,255,0.1); color: rgba(255,255,255,0.6);
+  font-size: 0.56rem; font-weight: 600; padding: 2px 6px;
+}
+.k-term-hint { margin-left: auto; color: rgba(255,255,255,0.15); }
+
+/* Drop zone */
+.k-dropzone {
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 7px;
+  min-height: 110px; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; background: rgba(255,255,255,0.02); transition: all 0.15s;
+  overflow-y: auto;
+}
+.k-dropzone.hover, .k-dropzone:hover {
+  border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04);
+}
+.k-dropzone.filled { align-items: flex-start; padding: 12px; }
+
+.k-drop-empty {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: rgba(255,255,255,0.2); font-size: 0.8rem;
+}
+.k-drop-icon {
+  width: 36px; height: 36px;
+  border: 1px solid rgba(255,255,255,0.08); border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+}
+.k-drop-files { display: flex; flex-direction: column; gap: 6px; width: 100%; }
+.k-drop-file {
+  display: flex; align-items: center; gap: 10px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 5px; padding: 7px 10px;
+}
+.k-file-ext {
+  font-family: var(--mono); font-size: 0.58rem; font-weight: 600;
+  color: rgba(255,255,255,0.4); text-transform: uppercase;
+  border: 1px solid rgba(255,255,255,0.12); padding: 1px 5px; border-radius: 3px;
+}
+.k-file-name { flex: 1; font-size: 0.78rem; color: rgba(255,255,255,0.5); }
+.k-file-rm { background: none; border: none; color: rgba(255,255,255,0.2); font-size: 1rem; cursor: pointer; transition: color 0.1s; }
+.k-file-rm:hover { color: rgba(255,80,80,0.8); }
+
+/* Template pills */
+.k-tpls { display: flex; gap: 3px; margin-left: auto; }
+.k-tpl {
+  font-family: var(--mono); font-size: 0.55rem; font-weight: 600;
+  letter-spacing: 0.08em; padding: 2px 7px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: transparent; color: rgba(255,255,255,0.28);
+  border-radius: 3px; cursor: pointer; transition: all 0.1s;
+}
+.k-tpl:hover { border-color: rgba(255,255,255,0.2); color: rgba(255,255,255,0.6); }
+.k-tpl.on { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.25); }
+
+/* Textarea */
+.k-textarea-wrap { position: relative; }
+.k-textarea {
+  width: 100%; border: 1px solid rgba(255,255,255,0.08); border-radius: 7px;
+  background: rgba(255,255,255,0.02); padding: 13px;
+  font-family: var(--mono); font-size: 0.76rem; line-height: 1.7;
+  color: rgba(255,255,255,0.8); resize: vertical; outline: none;
+  transition: border-color 0.15s;
+}
+.k-textarea:focus { border-color: rgba(255,255,255,0.2); }
+.k-textarea::placeholder { color: rgba(255,255,255,0.18); }
+.k-textarea-ver {
+  position: absolute; bottom: 9px; right: 12px;
+  font-family: var(--mono); font-size: 0.56rem;
+  color: rgba(255,255,255,0.15); letter-spacing: 0.08em;
+}
+
+/* Launch button */
+.k-launch {
+  width: 100%;
+  background: #fff; color: #000;
+  border: none; padding: 13px 18px; border-radius: 7px;
+  font-family: var(--mono); font-size: 0.76rem; font-weight: 600;
+  letter-spacing: 0.04em;
+  display: flex; align-items: center; gap: 10px;
+  cursor: pointer; transition: all 0.12s;
+}
+.k-launch:hover:not(:disabled) { background: rgba(255,255,255,0.88); transform: translateY(-1px); }
+.k-launch:disabled { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.2); cursor: not-allowed; }
+.k-launch-pre { color: rgba(0,0,0,0.3); font-size: 1rem; }
+.k-launch span:nth-child(2) { flex: 1; text-align: left; }
+.k-launch svg { margin-left: auto; flex-shrink: 0; }
+.k-launch:disabled .k-launch-pre { color: rgba(255,255,255,0.15); }
+.k-launch:disabled svg { display: none; }
+
+@media (max-width: 1100px) {
+  .k-hero { grid-template-columns: 1fr; padding: 60px 40px; }
+  .k-readout { display: none; }
+  .k-uc-grid { grid-template-columns: repeat(1, 1fr); }
+  .k-console { grid-template-columns: 1fr; padding: 60px 40px; }
+  .k-title { font-size: 2.8rem; }
+  .k-nav-center { display: none; }
 }
 </style>

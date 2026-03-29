@@ -3,7 +3,7 @@
     <!-- Header -->
     <header class="app-header">
       <div class="header-left">
-        <div class="brand" @click="router.push('/')">MIROFISH</div>
+        <div class="brand" @click="router.push('/')">KEPHALOS DATA</div>
       </div>
       
       <div class="header-center">
@@ -15,7 +15,7 @@
             :class="{ active: viewMode === mode }"
             @click="viewMode = mode"
           >
-            {{ { graph: '图谱', split: '双栏', workbench: '工作台' }[mode] }}
+            {{ { graph: 'Graph', split: 'Split', workbench: 'Workbench' }[mode] }}
           </button>
         </div>
       </div>
@@ -23,7 +23,7 @@
       <div class="header-right">
         <div class="workflow-step">
           <span class="step-num">Step 3/5</span>
-          <span class="step-name">开始模拟</span>
+          <span class="step-name">Start Simulation</span>
         </div>
         <div class="step-divider"></div>
         <span class="status-indicator" :class="statusClass">
@@ -47,7 +47,7 @@
         />
       </div>
 
-      <!-- Right Panel: Step3 开始模拟 -->
+      <!-- Right Panel: Step3 Start Simulation -->
       <div class="panel-wrapper right" :style="rightPanelStyle">
         <Step3Simulation
           :simulationId="currentSimulationId"
@@ -87,9 +87,9 @@ const viewMode = ref('split')
 
 // Data State
 const currentSimulationId = ref(route.params.simulationId)
-// 直接在初始化时从 query 参数获取 maxRounds，确保子组件能立即获取到值
+// ç›´æŽ¥åœ¨åˆå§‹åŒ–æ—¶ä»Ž query å‚æ•°èŽ·å– maxRoundsï¼Œç¡®ä¿å­ç»„ä»¶èƒ½ç«‹å³èŽ·å–åˆ°å€¼
 const maxRounds = ref(route.query.maxRounds ? parseInt(route.query.maxRounds) : null)
-const minutesPerRound = ref(30) // 默认每轮30分钟
+const minutesPerRound = ref(30) // é»˜è®¤æ¯è½®30åˆ†é’Ÿ
 const projectData = ref(null)
 const graphData = ref(null)
 const graphLoading = ref(false)
@@ -145,104 +145,104 @@ const toggleMaximize = (target) => {
 }
 
 const handleGoBack = async () => {
-  // 在返回 Step 2 之前，先关闭正在运行的模拟
-  addLog('准备返回 Step 2，正在关闭模拟...')
+  // åœ¨è¿”å›ž Step 2 ä¹‹å‰ï¼Œå…ˆå…³é—­æ­£åœ¨è¿è¡Œçš„æ¨¡æ‹Ÿ
+  addLog('å‡†å¤‡è¿”å›ž Step 2ï¼Œæ­£åœ¨å…³é—­æ¨¡æ‹Ÿ...')
   
-  // 停止轮询
+  // åœæ­¢è½®è¯¢
   stopGraphRefresh()
   
   try {
-    // 先尝试优雅关闭模拟环境
+    // å…ˆå°è¯•ä¼˜é›…å…³é—­æ¨¡æ‹ŸçŽ¯å¢ƒ
     const envStatusRes = await getEnvStatus({ simulation_id: currentSimulationId.value })
     
     if (envStatusRes.success && envStatusRes.data?.env_alive) {
-      addLog('正在关闭模拟环境...')
+      addLog('æ­£åœ¨å…³é—­æ¨¡æ‹ŸçŽ¯å¢ƒ...')
       try {
         await closeSimulationEnv({ 
           simulation_id: currentSimulationId.value,
           timeout: 10
         })
-        addLog('✓ 模拟环境已关闭')
+        addLog('âœ“ æ¨¡æ‹ŸçŽ¯å¢ƒå·²å…³é—­')
       } catch (closeErr) {
-        addLog(`关闭模拟环境失败，尝试强制停止...`)
+        addLog(`å…³é—­æ¨¡æ‹ŸçŽ¯å¢ƒå¤±è´¥ï¼Œå°è¯•å¼ºåˆ¶åœæ­¢...`)
         try {
           await stopSimulation({ simulation_id: currentSimulationId.value })
-          addLog('✓ 模拟已强制停止')
+          addLog('âœ“ æ¨¡æ‹Ÿå·²å¼ºåˆ¶åœæ­¢')
         } catch (stopErr) {
-          addLog(`强制停止失败: ${stopErr.message}`)
+          addLog(`å¼ºåˆ¶åœæ­¢å¤±è´¥: ${stopErr.message}`)
         }
       }
     } else {
-      // 环境未运行，检查是否需要停止进程
+      // çŽ¯å¢ƒæœªè¿è¡Œï¼Œæ£€æŸ¥æ˜¯å¦éœ€è¦åœæ­¢è¿›ç¨‹
       if (isSimulating.value) {
-        addLog('正在停止模拟进程...')
+        addLog('æ­£åœ¨åœæ­¢æ¨¡æ‹Ÿè¿›ç¨‹...')
         try {
           await stopSimulation({ simulation_id: currentSimulationId.value })
-          addLog('✓ 模拟已停止')
+          addLog('âœ“ æ¨¡æ‹Ÿå·²åœæ­¢')
         } catch (err) {
-          addLog(`停止模拟失败: ${err.message}`)
+          addLog(`åœæ­¢æ¨¡æ‹Ÿå¤±è´¥: ${err.message}`)
         }
       }
     }
   } catch (err) {
-    addLog(`检查模拟状态失败: ${err.message}`)
+    addLog(`æ£€æŸ¥æ¨¡æ‹ŸçŠ¶æ€å¤±è´¥: ${err.message}`)
   }
   
-  // 返回到 Step 2 (环境搭建)
+  // è¿”å›žåˆ° Step 2 (Environment Setup)
   router.push({ name: 'Simulation', params: { simulationId: currentSimulationId.value } })
 }
 
 const handleNextStep = () => {
-  // Step3Simulation 组件会直接处理报告生成和路由跳转
-  // 这个方法仅作为备用
-  addLog('进入 Step 4: 报告生成')
+  // Step3Simulation ç»„ä»¶ä¼šç›´æŽ¥å¤„ç†Report Generationå’Œè·¯ç”±è·³è½¬
+  // è¿™ä¸ªæ–¹æ³•ä»…ä½œä¸ºå¤‡ç”¨
+  addLog('è¿›å…¥ Step 4: Report Generation')
 }
 
 // --- Data Logic ---
 const loadSimulationData = async () => {
   try {
-    addLog(`加载模拟数据: ${currentSimulationId.value}`)
+    addLog(`åŠ è½½æ¨¡æ‹Ÿæ•°æ®: ${currentSimulationId.value}`)
     
-    // 获取 simulation 信息
+    // èŽ·å– simulation ä¿¡æ¯
     const simRes = await getSimulation(currentSimulationId.value)
     if (simRes.success && simRes.data) {
       const simData = simRes.data
       
-      // 获取 simulation config 以获取 minutes_per_round
+      // èŽ·å– simulation config ä»¥èŽ·å– minutes_per_round
       try {
         const configRes = await getSimulationConfig(currentSimulationId.value)
         if (configRes.success && configRes.data?.time_config?.minutes_per_round) {
           minutesPerRound.value = configRes.data.time_config.minutes_per_round
-          addLog(`时间配置: 每轮 ${minutesPerRound.value} 分钟`)
+          addLog(`æ—¶é—´é…ç½®: æ¯è½® ${minutesPerRound.value} åˆ†é’Ÿ`)
         }
       } catch (configErr) {
-        addLog(`获取时间配置失败，使用默认值: ${minutesPerRound.value}分钟/轮`)
+        addLog(`èŽ·å–æ—¶é—´é…ç½®å¤±è´¥ï¼Œä½¿ç”¨é»˜è®¤å€¼: ${minutesPerRound.value}åˆ†é’Ÿ/è½®`)
       }
       
-      // 获取 project 信息
+      // èŽ·å– project ä¿¡æ¯
       if (simData.project_id) {
         const projRes = await getProject(simData.project_id)
         if (projRes.success && projRes.data) {
           projectData.value = projRes.data
-          addLog(`项目加载成功: ${projRes.data.project_id}`)
+          addLog(`é¡¹ç›®åŠ è½½æˆåŠŸ: ${projRes.data.project_id}`)
           
-          // 获取 graph 数据
+          // èŽ·å– graph æ•°æ®
           if (projRes.data.graph_id) {
             await loadGraph(projRes.data.graph_id)
           }
         }
       }
     } else {
-      addLog(`加载模拟数据失败: ${simRes.error || '未知错误'}`)
+      addLog(`åŠ è½½æ¨¡æ‹Ÿæ•°æ®å¤±è´¥: ${simRes.error || 'æœªçŸ¥é”™è¯¯'}`)
     }
   } catch (err) {
-    addLog(`加载异常: ${err.message}`)
+    addLog(`åŠ è½½å¼‚å¸¸: ${err.message}`)
   }
 }
 
 const loadGraph = async (graphId) => {
-  // 当正在模拟时，自动刷新不显示全屏 loading，以免闪烁
-  // 手动刷新或初始加载时显示 loading
+  // å½“æ­£åœ¨æ¨¡æ‹Ÿæ—¶ï¼Œè‡ªåŠ¨åˆ·æ–°ä¸æ˜¾ç¤ºå…¨å± loadingï¼Œä»¥å…é—ªçƒ
+  // æ‰‹åŠ¨åˆ·æ–°æˆ–åˆå§‹åŠ è½½æ—¶æ˜¾ç¤º loading
   if (!isSimulating.value) {
     graphLoading.value = true
   }
@@ -252,11 +252,11 @@ const loadGraph = async (graphId) => {
     if (res.success) {
       graphData.value = res.data
       if (!isSimulating.value) {
-        addLog('图谱数据加载成功')
+        addLog('Graph data loaded successfully')
       }
     }
   } catch (err) {
-    addLog(`图谱加载失败: ${err.message}`)
+    addLog(`Failed to load graph: ${err.message}`)
   } finally {
     graphLoading.value = false
   }
@@ -273,8 +273,8 @@ let graphRefreshTimer = null
 
 const startGraphRefresh = () => {
   if (graphRefreshTimer) return
-  addLog('开启图谱实时刷新 (30s)')
-  // 立即刷新一次，然后每30秒刷新
+  addLog('Enable real-time graph refresh (30s)')
+  // ç«‹å³åˆ·æ–°ä¸€æ¬¡ï¼Œç„¶åŽæ¯30ç§’åˆ·æ–°
   graphRefreshTimer = setInterval(refreshGraph, 30000)
 }
 
@@ -282,7 +282,7 @@ const stopGraphRefresh = () => {
   if (graphRefreshTimer) {
     clearInterval(graphRefreshTimer)
     graphRefreshTimer = null
-    addLog('停止图谱实时刷新')
+    addLog('Stop real-time graph refresh')
   }
 }
 
@@ -295,11 +295,11 @@ watch(isSimulating, (newValue) => {
 }, { immediate: true })
 
 onMounted(() => {
-  addLog('SimulationRunView 初始化')
+  addLog('SimulationRunView åˆå§‹åŒ–')
   
-  // 记录 maxRounds 配置（值已在初始化时从 query 参数获取）
+  // è®°å½• maxRounds é…ç½®ï¼ˆå€¼å·²åœ¨åˆå§‹åŒ–æ—¶ä»Ž query å‚æ•°èŽ·å–ï¼‰
   if (maxRounds.value) {
-    addLog(`自定义模拟轮数: ${maxRounds.value}`)
+    addLog(`è‡ªå®šä¹‰æ¨¡æ‹Ÿè½®æ•°: ${maxRounds.value}`)
   }
   
   loadSimulationData()
@@ -315,22 +315,23 @@ onUnmounted(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: #FFF;
+  background: var(--page-bg);
   overflow: hidden;
   font-family: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
 }
 
 /* Header */
 .app-header {
-  height: 60px;
-  border-bottom: 1px solid #EAEAEA;
+  height: 56px;
+  border-bottom: 1px solid var(--line-strong);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  background: #FFF;
+  background: var(--page-bg);
   z-index: 100;
   position: relative;
+  color: var(--text-primary);
 }
 
 .header-center {
@@ -342,14 +343,16 @@ onUnmounted(() => {
 .brand {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 800;
-  font-size: 18px;
-  letter-spacing: 1px;
+  font-size: 1rem;
+  letter-spacing: 0.16em;
+  color: #f4ecdc;
+  text-shadow: 0 0 8px rgba(232, 224, 208, 0.2);
   cursor: pointer;
 }
 
 .view-switcher {
   display: flex;
-  background: #F5F5F5;
+  background: var(--panel-muted);
   padding: 4px;
   border-radius: 6px;
   gap: 4px;
@@ -361,16 +364,16 @@ onUnmounted(() => {
   padding: 6px 16px;
   font-size: 12px;
   font-weight: 600;
-  color: #666;
+  color: var(--text-secondary);
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .switch-btn.active {
-  background: #FFF;
-  color: #000;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  background: var(--panel-active);
+  color: var(--text-primary);
+  border: 1px solid var(--line-soft);
 }
 
 .header-right {
@@ -389,18 +392,18 @@ onUnmounted(() => {
 .step-num {
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
-  color: #999;
+  color: var(--text-muted);
 }
 
 .step-name {
   font-weight: 700;
-  color: #000;
+  color: var(--text-primary);
 }
 
 .step-divider {
   width: 1px;
   height: 14px;
-  background-color: #E0E0E0;
+  background-color: var(--line-soft);
 }
 
 .status-indicator {
@@ -408,7 +411,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #666;
+  color: var(--text-secondary);
   font-weight: 500;
 }
 
@@ -430,6 +433,7 @@ onUnmounted(() => {
   flex: 1;
   display: flex;
   position: relative;
+  color: var(--text-primary);
   overflow: hidden;
 }
 
@@ -441,7 +445,10 @@ onUnmounted(() => {
 }
 
 .panel-wrapper.left {
-  border-right: 1px solid #EAEAEA;
+  border-right: 1px solid var(--line-strong);
 }
 </style>
+
+
+
 
