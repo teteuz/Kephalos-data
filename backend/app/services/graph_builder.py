@@ -1,8 +1,7 @@
 """
-图谱构建服务
-接口2：使用Zep API构建Standalone Graph
+Graph building service
+Endpoint 2: Build Standalone Graph using ZEP API
 """
-
 import os
 import uuid
 import time
@@ -45,7 +44,7 @@ class GraphBuilderService:
     def __init__(self, api_key: Optional[str] = None):
         self.api_key = api_key or Config.ZEP_API_KEY
         if not self.api_key:
-            raise ValueError("ZEP_API_KEY 未配置")
+            raise ValueError("ZEP_API_KEY not configured")
         
         self.client = Zep(api_key=self.api_key)
         self.task_manager = TaskManager()
@@ -54,7 +53,7 @@ class GraphBuilderService:
         self,
         text: str,
         ontology: Dict[str, Any],
-        graph_name: str = "MiroFish Graph",
+        graph_name: str = "KephalosData Graph",
         chunk_size: int = 500,
         chunk_overlap: int = 50,
         batch_size: int = 3
@@ -185,13 +184,13 @@ class GraphBuilderService:
             self.task_manager.fail_task(task_id, error_msg)
     
     def create_graph(self, name: str) -> str:
-        """创建Zep图谱（公开方法）"""
-        graph_id = f"mirofish_{uuid.uuid4().hex[:16]}"
+        """Create a ZEP graph (public method)."""
+        graph_id = f"kephalosdata_{uuid.uuid4().hex[:16]}"
         
         self.client.graph.create(
             graph_id=graph_id,
             name=name,
-            description="MiroFish Social Simulation Graph"
+            description="KephalosData Social Simulation Graph"
         )
         
         return graph_id

@@ -291,7 +291,7 @@ onActivated(loadHistory)
 }
 .st-idle { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3); }
 .st-running { background: rgba(251,191,36,0.1); color: #fbbf24; }
-.st-done { background: rgba(34,197,94,0.1); color: #22c55e; }
+.st-done { background: rgba(189,235,181,0.15); color: #BDEBB5; }
 
 .hdb-open-btn {
   font-family: 'DM Mono', monospace; font-size: 0.68rem;

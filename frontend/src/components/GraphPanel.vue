@@ -1,20 +1,37 @@
 <template>
   <div class="graph-panel">
     <div class="panel-header">
-      <span class="panel-title">Graph Relationship Visualization</span>
       <!-- Top toolbar (Internal Top Right) -->
       <div class="header-tools">
         <button class="tool-btn" @click="$emit('refresh')" :disabled="loading" title="Refresh graph">
           <span class="icon-refresh" :class="{ 'spinning': loading }">↻</span>
           <span class="btn-text">Refresh</span>
         </button>
-        <button class="tool-btn" @click="$emit('toggle-maximize')" title="Maximize/Restore">
-          <span class="icon-maximize">⛶</span>
-        </button>
+        
+        <!-- Simulation Control Buttons -->
+        <div v-if="isSimulating" class="simulation-controls">
+          <button class="tool-btn control-btn" @click="$emit('pause-simulation')" title="Pause simulation">
+            <span class="icon-pause">⏸</span>
+            <span class="btn-text">Pause</span>
+          </button>
+          <button class="tool-btn control-btn resume-btn" @click="$emit('resume-simulation')" title="Resume simulation">
+            <span class="icon-play">▶</span>
+            <span class="btn-text">Resume</span>
+          </button>
+        </div>
       </div>
     </div>
     
     <div class="graph-container" ref="graphContainer">
+      <!-- Overlay animated background video -->
+      <video class="graph-bg-video" src="/ai orb 2.webm" autoplay loop muted playsinline preload="auto"></video>
+
+      <!-- Tooltip -->
+      <div v-if="tooltip.visible" class="graph-tooltip" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
+        <div class="tooltip-title">{{ tooltip.title }}</div>
+        <div class="tooltip-content">{{ tooltip.content }}</div>
+      </div>
+
       <!-- Graph visualization -->
       <div v-if="graphData" class="graph-view">
         <svg ref="graphSvg" class="graph-svg"></svg>
@@ -224,14 +241,14 @@
       </div>
     </div>
     
-    <!-- Toggle edge labels -->
     <div v-if="graphData" class="edge-labels-toggle">
       <label class="toggle-switch">
         <input type="checkbox" v-model="showEdgeLabels" />
         <span class="slider"></span>
       </label>
-      <span class="toggle-label">Show Edge Labels</span>
+      <span class="toggle-label">{{ showEdgeLabels ? 'Hide Edge Labels' : 'Show Edge Labels' }}</span>
     </div>
+
   </div>
 </template>
 
@@ -246,7 +263,7 @@ const props = defineProps({
   isSimulating: Boolean
 })
 
-const emit = defineEmits(['refresh', 'toggle-maximize'])
+const emit = defineEmits(['refresh', 'toggle-maximize', 'pause-simulation', 'resume-simulation'])
 
 const graphContainer = ref(null)
 const graphSvg = ref(null)
@@ -255,10 +272,27 @@ const showEdgeLabels = ref(true) //
 const expandedSelfLoops = ref(new Set()) // 
 const showSimulationFinishedHint = ref(false) // 
 const wasSimulating = ref(false) // 
+const tooltip = ref({ visible: false, x: 0, y: 0, title: '', content: '' })
 
 // 
 const dismissFinishedHint = () => {
   showSimulationFinishedHint.value = false
+}
+
+// 
+const showTooltip = (event, d, type) => {
+  const rect = graphContainer.value.getBoundingClientRect()
+  tooltip.value = {
+    visible: true,
+    x: event.clientX - rect.left + 10,
+    y: event.clientY - rect.top + 10,
+    title: d.name,
+    content: type === 'node' ? `${d.type} • ${d.rawData.labels?.join(', ') || 'Entity'}` : d.name
+  }
+}
+
+const hideTooltip = () => {
+  tooltip.value.visible = false
 }
 
 // isSimulating ，
@@ -588,6 +622,7 @@ const renderGraph = () => {
         type: 'edge',
         data: d.rawData
       }
+      d3.select(event.target).attr('stroke', '#BDEBB5').attr('stroke-width', 2.5)
     })
 
  // Link labels background ()
@@ -606,8 +641,8 @@ const renderGraph = () => {
       linkLabelBg.attr('fill', 'rgba(20,25,40,0.92)')
       linkLabels.attr('fill', 'rgba(255,255,255,0.45)')
  // 
-      link.filter(l => l === d).attr('stroke', '#3b82f6').attr('stroke-width', 2.5)
-      d3.select(event.target).attr('fill', 'rgba(59, 130, 246, 0.2)')
+      link.filter(l => l === d).attr('stroke', '#BDEBB5').attr('stroke-width', 2.5)
+      d3.select(event.target).attr('fill', 'rgba(189,235,181,0.2)')
       
       selectedItem.value = {
         type: 'edge',
@@ -634,13 +669,19 @@ const renderGraph = () => {
       linkLabelBg.attr('fill', 'rgba(20,25,40,0.92)')
       linkLabels.attr('fill', 'rgba(255,255,255,0.45)')
  // 
-      link.filter(l => l === d).attr('stroke', '#3b82f6').attr('stroke-width', 2.5)
-      d3.select(event.target).attr('fill', '#60a5fa')
+      link.filter(l => l === d).attr('stroke', '#BDEBB5').attr('stroke-width', 2.5)
+      d3.select(event.target).attr('fill', '#BDEBB5')
       
       selectedItem.value = {
         type: 'edge',
         data: d.rawData
       }
+    })
+    .on('mouseenter', (event, d) => {
+      showTooltip(event, d, 'edge')
+    })
+    .on('mouseleave', () => {
+      hideTooltip()
     })
   
  // 
@@ -659,6 +700,7 @@ const renderGraph = () => {
     .attr('stroke', '#0a0a0a')
     .attr('stroke-width', 1.5)
     .style('cursor', 'pointer')
+    .style('transition', 'r 0.3s ease, stroke 0.3s ease, stroke-width 0.3s ease')
     .call(d3.drag()
       .on('start', (event, d) => {
  // ，（）
@@ -686,25 +728,36 @@ const renderGraph = () => {
         }
       })
       .on('end', (event, d) => {
- // 
+ // 结束拖拽后流畅过渡
         if (d._isDragging) {
-          simulation.alphaTarget(0)
+          simulation.alphaTarget(0.15).restart()
+          setTimeout(() => {
+            simulation.alphaTarget(0)
+          }, 500)
         }
-        d.fx = null
-        d.fy = null
+
+        // 持续保持节点位置一小段时间，以免立即回弹断开
+        d.fx = event.x
+        d.fy = event.y
+        setTimeout(() => {
+          d.fx = null
+          d.fy = null
+        }, 300)
+
         d._isDragging = false
       })
     )
     .on('click', (event, d) => {
       event.stopPropagation()
  // 
-      node.attr('stroke', '#0a0a0a').attr('stroke-width', 1.5)
-      linkGroup.selectAll('path').attr('stroke', '#C0C0C0').attr('stroke-width', 1.5)
+      node.transition().duration(300).attr('r', 10).attr('stroke', '#0a0a0a').attr('stroke-width', 1.5)
+      linkGroup.selectAll('path').transition().duration(300).attr('stroke', '#C0C0C0').attr('stroke-width', 1.5)
  // 
-      d3.select(event.target).attr('stroke', '#60a5fa').attr('stroke-width', 3)
+      d3.select(event.target).transition().duration(300).attr('r', 14).attr('stroke', '#BDEBB5').attr('stroke-width', 3)
  // 
       link.filter(l => l.source.id === d.id || l.target.id === d.id)
-        .attr('stroke', '#60a5fa')
+        .transition().duration(300)
+        .attr('stroke', '#BDEBB5')
         .attr('stroke-width', 2)
       
       selectedItem.value = {
@@ -716,12 +769,14 @@ const renderGraph = () => {
     })
     .on('mouseenter', (event, d) => {
       if (!selectedItem.value || selectedItem.value.data?.uuid !== d.rawData.uuid) {
-        d3.select(event.target).attr('stroke', 'rgba(255,255,255,0.6)').attr('stroke-width', 2)
+        d3.select(event.target).transition().duration(200).attr('r', 12).attr('stroke', 'rgba(189,235,181,0.8)').attr('stroke-width', 2)
+        showTooltip(event, d, 'node')
       }
     })
     .on('mouseleave', (event, d) => {
       if (!selectedItem.value || selectedItem.value.data?.uuid !== d.rawData.uuid) {
-        d3.select(event.target).attr('stroke', '#0a0a0a').attr('stroke-width', 1.5)
+        d3.select(event.target).transition().duration(200).attr('r', 10).attr('stroke', '#0a0a0a').attr('stroke-width', 1.5)
+        hideTooltip()
       }
     })
 
@@ -826,6 +881,38 @@ onUnmounted(() => {
   background-size: 32px 32px;
   overflow: hidden;
 }
+
+.graph-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.graph-bg-video {
+  position: absolute;
+  inset: 0;
+  width: 140%;
+  height: 140%;
+  left: -20%;
+  top: -20%;
+  object-fit: cover;
+  opacity: 0.22;
+  transform: scale(1.03);
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  z-index: 1;
+}
+
+.graph-bg-video:hover {
+  opacity: 0.38;
+  transform: scale(1.05);
+}
+
+.graph-view {
+  position: relative;
+  z-index: 2;
+}
+
 
 .panel-header {
   position: absolute;
@@ -1114,12 +1201,19 @@ onUnmounted(() => {
 .graph-legend {
   position: absolute;
   bottom: 16px; left: 16px;
-  background: #000000;
-  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(8, 8, 8, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 6px;
   padding: 10px 14px;
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(10px) saturate(180%);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   z-index: 10;
+  transition: all 0.3s ease;
+}
+.graph-legend:hover {
+  background: rgba(8, 8, 8, 0.5);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
 }
 .legend-title {
   font-size: 9px;
@@ -1146,6 +1240,7 @@ onUnmounted(() => {
 }
 
 /* ── EDGE LABEL TOGGLE ── */
+/* ── EDGE LABEL TOGGLE ── */
 .edge-labels-toggle {
   position: absolute;
   top: 14px; left: 50%; transform: translateX(-50%);
@@ -1160,7 +1255,7 @@ onUnmounted(() => {
 .toggle-label {
   font-size: 10px;
   font-family: Arial, sans-serif;
-  color: #FFFFFF;
+  color: #BDEBB5;
   letter-spacing: 0.08em;
   white-space: nowrap;
 }
@@ -1168,7 +1263,7 @@ onUnmounted(() => {
 .toggle-switch input { opacity: 0; width: 0; height: 0; }
 .slider {
   position: absolute; cursor: pointer;
-  inset: 0; background: rgba(255,255,255,0.1);
+  inset: 0; background: rgba(189,235,181,0.2);
   border-radius: 18px; transition: 0.2s;
 }
 .slider:before {
@@ -1176,14 +1271,73 @@ onUnmounted(() => {
   position: absolute;
   height: 12px; width: 12px;
   left: 3px; bottom: 3px;
-  background: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.85);
   border-radius: 50%; transition: 0.2s;
 }
-input:checked + .slider { background: rgba(59,130,246,0.5); }
-input:checked + .slider:before { background: #60a5fa; transform: translateX(14px); }
+input:checked + .slider { background: rgba(189,235,181,0.5); }
+input:checked + .slider:before { background: #BDEBB5; transform: translateX(14px); }
+
+/* ── SIMULATION CONTROLS ── */
+.simulation-controls {
+  display: flex;
+  gap: 8px;
+  margin-left: 12px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(255,255,255,0.1);
+}
+
+.control-btn {
+  background: rgba(189,235,181,0.1);
+  border: 1px solid rgba(189,235,181,0.3);
+  color: #BDEBB5;
+  transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+  background: rgba(189,235,181,0.2);
+  border-color: rgba(189,235,181,0.5);
+  transform: translateY(-1px);
+}
+
+.resume-btn {
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.3);
+  color: #60a5fa;
+}
+
+.resume-btn:hover {
+  background: rgba(59,130,246,0.2);
+  border-color: rgba(59,130,246,0.5);
+}
 
 /* Scrollbar in detail panel */
 .node-detail::-webkit-scrollbar { width: 3px; }
 .node-detail::-webkit-scrollbar-track { background: transparent; }
 .node-detail::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+/* ── TOOLTIP ── */
+.graph-tooltip {
+  position: absolute;
+  background: rgba(8,12,20,0.95);
+  border: 1px solid rgba(189,235,181,0.3);
+  border-radius: 6px;
+  padding: 8px 12px;
+  pointer-events: none;
+  z-index: 100;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  max-width: 200px;
+  font-size: 11px;
+  font-family: 'IBM Plex Mono', monospace;
+}
+.tooltip-title {
+  color: #BDEBB5;
+  font-weight: 600;
+  margin-bottom: 4px;
+  letter-spacing: 0.05em;
+}
+.tooltip-content {
+  color: rgba(255,255,255,0.8);
+  line-height: 1.3;
+}
 </style>

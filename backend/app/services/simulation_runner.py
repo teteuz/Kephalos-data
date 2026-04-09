@@ -23,9 +23,9 @@ from ..utils.logger import get_logger
 from .zep_graph_memory_updater import ZepGraphMemoryManager
 from .simulation_ipc import SimulationIPCClient, CommandType, IPCResponse
 
-logger = get_logger('mirofish.simulation_runner')
+logger = get_logger('kephalosdata.simulation_runner')
 
-# 标记是否已注册清理函数
+# Flag for cleanup function registration
 _cleanup_registered = False
 
 # 平台检测
@@ -155,6 +155,52 @@ class SimulationRunState:
             self.reddit_actions_count += 1
         
         self.updated_at = datetime.now().isoformat()
+    
+    def analyze_feedback_for_next_round(self) -> Dict[str, Any]:
+        """Analyze recent actions to provide feedback for agent behavior adjustment"""
+        if not self.recent_actions:
+            return {"feedback": "No recent actions to analyze"}
+        
+        # Analyze action patterns
+        action_types = {}
+        platform_activity = {"twitter": 0, "reddit": 0}
+        agent_activity = {}
+        
+        for action in self.recent_actions[-50:]:  # Last 50 actions
+            action_types[action.action_type] = action_types.get(action.action_type, 0) + 1
+            platform_activity[action.platform] += 1
+            agent_activity[action.agent_id] = agent_activity.get(action.agent_id, 0) + 1
+        
+        # Calculate engagement metrics
+        total_actions = len(self.recent_actions)
+        if total_actions > 0:
+            avg_actions_per_agent = sum(agent_activity.values()) / len(agent_activity) if agent_activity else 0
+            most_active_platform = max(platform_activity, key=platform_activity.get)
+            dominant_action = max(action_types, key=action_types.get) if action_types else "None"
+            
+            feedback = {
+                "round": self.current_round,
+                "total_recent_actions": total_actions,
+                "avg_actions_per_agent": round(avg_actions_per_agent, 2),
+                "most_active_platform": most_active_platform,
+                "dominant_action_type": dominant_action,
+                "platform_distribution": platform_activity,
+                "action_distribution": action_types,
+                "recommendations": []
+            }
+            
+            # Generate recommendations for next round
+            if platform_activity["twitter"] > platform_activity["reddit"] * 1.5:
+                feedback["recommendations"].append("Increase Reddit activity to balance platforms")
+            elif platform_activity["reddit"] > platform_activity["twitter"] * 1.5:
+                feedback["recommendations"].append("Increase Twitter activity to balance platforms")
+            
+            if avg_actions_per_agent < 2:
+                feedback["recommendations"].append("Encourage more agent participation")
+            
+            return feedback
+        
+        return {"feedback": "Insufficient data for analysis"}
     
     def to_dict(self) -> Dict[str, Any]:
         return {

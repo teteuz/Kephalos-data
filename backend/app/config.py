@@ -1,13 +1,13 @@
 """
-配置管理
-统一从项目根目录的 .env 文件加载配置
+Configuration management
+Load env config from project root .env file
 """
 
 import os
 from dotenv import load_dotenv
 
-# 加载项目根目录的 .env 文件
-# 路径: MiroFish/.env (相对于 backend/app/config.py)
+# Load root .env
+# path: KephalosData/.env (relative to backend/app/config.py)
 project_root_env = os.path.join(os.path.dirname(__file__), '../../.env')
 
 if os.path.exists(project_root_env):
@@ -20,8 +20,8 @@ else:
 class Config:
     """Flask配置类"""
     
-    # Flask配置
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'mirofish-secret-key')
+    # Flask configuration
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'kephalosdata-secret-key')
     DEBUG = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
     
     # JSON配置 - 禁用ASCII转义，让中文直接显示（而不是 \uXXXX 格式）

@@ -16,7 +16,7 @@ from ..models.project import ProjectManager
 from ..models.task import TaskManager, TaskStatus
 from ..utils.logger import get_logger
 
-logger = get_logger('mirofish.api.report')
+logger = get_logger('kephalosdata.api.report')
 
 
 # ============== 报告生成接口 ==============
@@ -925,17 +925,17 @@ def stream_console_log(report_id: str):
         }), 500
 
 
-# ============== 工具调用接口（供调试使用）==============
+# ============== Tools APIs (debug) ==============
 
 @report_bp.route('/tools/search', methods=['POST'])
 def search_graph_tool():
     """
-    图谱搜索工具接口（供调试使用）
-    
-    请求（JSON）：
+    Graph search tool (for debugging)
+
+    Request (JSON):
         {
-            "graph_id": "mirofish_xxxx",
-            "query": "搜索查询",
+            "graph_id": "kephalosdata_xxxx",
+            "query": "search query",
             "limit": 10
         }
     """
@@ -949,7 +949,7 @@ def search_graph_tool():
         if not graph_id or not query:
             return jsonify({
                 "success": False,
-                "error": "请提供 graph_id 和 query"
+                "error": "graph_id and query are required"
             }), 400
         
         from ..services.zep_tools import ZepToolsService
@@ -978,11 +978,11 @@ def search_graph_tool():
 @report_bp.route('/tools/statistics', methods=['POST'])
 def get_graph_statistics_tool():
     """
-    图谱统计工具接口（供调试使用）
-    
-    请求（JSON）：
+    Graph statistics tool (for debugging)
+
+    Request (JSON):
         {
-            "graph_id": "mirofish_xxxx"
+            "graph_id": "kephalosdata_xxxx"
         }
     """
     try:
@@ -993,7 +993,7 @@ def get_graph_statistics_tool():
         if not graph_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 graph_id"
+                "error": "graph_id is required"
             }), 400
         
         from ..services.zep_tools import ZepToolsService

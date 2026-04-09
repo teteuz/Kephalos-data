@@ -1,8 +1,7 @@
 """
-图谱相关API路由
-采用项目上下文机制，服务端持久化状态
+Graph-related API routes
+Uses a project context mechanism with server-side persistent state
 """
-
 import os
 import traceback
 import threading
@@ -18,12 +17,12 @@ from ..utils.logger import get_logger
 from ..models.task import TaskManager, TaskStatus
 from ..models.project import ProjectManager, ProjectStatus
 
-# 获取日志器
-logger = get_logger('mirofish.api')
+# Get logger
+logger = get_logger('kephalosdata.api')
 
 
 def allowed_file(filename: str) -> bool:
-    """检查文件扩展名是否允许"""
+    """Check if file extension is allowed."""
     if not filename or '.' not in filename:
         return False
     ext = os.path.splitext(filename)[1].lower().lstrip('.')
@@ -35,14 +34,14 @@ def allowed_file(filename: str) -> bool:
 @graph_bp.route('/project/<project_id>', methods=['GET'])
 def get_project(project_id: str):
     """
-    获取项目详情
+    Get project details
     """
     project = ProjectManager.get_project(project_id)
     
     if not project:
         return jsonify({
             "success": False,
-            "error": f"项目不存在: {project_id}"
+            "error": f"Project not found: {project_id}"
         }), 404
     
     return jsonify({
@@ -336,7 +335,7 @@ def build_graph():
             project.error = None
         
         # 获取配置
-        graph_name = data.get('graph_name', project.name or 'MiroFish Graph')
+        graph_name = data.get('graph_name', project.name or 'KephalosData Graph')
         chunk_size = data.get('chunk_size', project.chunk_size or Config.DEFAULT_CHUNK_SIZE)
         chunk_overlap = data.get('chunk_overlap', project.chunk_overlap or Config.DEFAULT_CHUNK_OVERLAP)
         
@@ -372,7 +371,7 @@ def build_graph():
         
         # 启动后台任务
         def build_task():
-            build_logger = get_logger('mirofish.build')
+            build_logger = get_logger('kephalosdata.build')
             try:
                 build_logger.info(f"[{task_id}] 开始构建图谱...")
                 task_manager.update_task(

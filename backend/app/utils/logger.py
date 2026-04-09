@@ -1,6 +1,6 @@
 """
-日志配置模块
-提供统一的日志管理，同时输出到控制台和文件
+Logging configuration module
+Provides unified logging output to console and file
 """
 
 import os
@@ -27,16 +27,16 @@ def _ensure_utf8_stdout():
 LOG_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'logs')
 
 
-def setup_logger(name: str = 'mirofish', level: int = logging.DEBUG) -> logging.Logger:
+def setup_logger(name: str = 'kephalosdata', level: int = logging.DEBUG) -> logging.Logger:
     """
-    设置日志器
-    
+    Configure a logger.
+
     Args:
-        name: 日志器名称
-        level: 日志级别
-        
+        name: logger name
+        level: log level
+
     Returns:
-        配置好的日志器
+        configured logger
     """
     # 确保日志目录存在
     os.makedirs(LOG_DIR, exist_ok=True)
@@ -88,15 +88,15 @@ def setup_logger(name: str = 'mirofish', level: int = logging.DEBUG) -> logging.
     return logger
 
 
-def get_logger(name: str = 'mirofish') -> logging.Logger:
+def get_logger(name: str = 'kephalosdata') -> logging.Logger:
     """
-    获取日志器（如果不存在则创建）
-    
+    Retrieve a logger (create if not exists).
+
     Args:
-        name: 日志器名称
-        
+        name: logger name
+
     Returns:
-        日志器实例
+        logger instance
     """
     logger = logging.getLogger(name)
     if not logger.handlers:

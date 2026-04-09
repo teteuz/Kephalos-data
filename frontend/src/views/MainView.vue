@@ -11,14 +11,6 @@
       </div>
 
       <div class="mv-header-center">
-        <div class="mv-switcher">
-          <button
-            v-for="mode in ['graph','split','workbench']"
-            :key="mode"
-            :class="['mv-sw', { active: viewMode === mode }]"
-            @click="viewMode = mode"
-          >{{ mode }}</button>
-        </div>
       </div>
 
       <div class="mv-header-right">
@@ -40,29 +32,44 @@
           :loading="graphLoading"
           :currentPhase="currentPhase"
           @refresh="refreshGraph"
-          @toggle-maximize="toggleMaximize('graph')"
         />
       </div>
-      <div class="mv-panel right" :style="rightPanelStyle">
-        <Step1GraphBuild
-          v-if="currentStep === 1"
-          :currentPhase="currentPhase"
-          :projectData="projectData"
-          :ontologyProgress="ontologyProgress"
-          :buildProgress="buildProgress"
-          :graphData="graphData"
-          :systemLogs="systemLogs"
-          @next-step="handleNextStep"
-        />
-        <Step2EnvSetup
-          v-else-if="currentStep === 2"
-          :projectData="projectData"
-          :graphData="graphData"
-          :systemLogs="systemLogs"
-          @go-back="handleGoBack"
-          @next-step="handleNextStep"
-          @add-log="addLog"
-        />
+      <div 
+        class="mv-panel right" 
+        :class="{ floating: !panelExpanded, expanded: panelExpanded }"
+        :style="rightPanelStyle"
+        @click="panelExpanded = true"
+      >
+        <div v-if="!panelExpanded" class="mv-float-tab">
+          <div class="mv-tab-icon">◆</div>
+          <div class="mv-tab-text">WORKBENCH</div>
+        </div>
+        <div v-else class="mv-panel-content">
+          <button 
+            class="mv-close-panel" 
+            @click.stop="panelExpanded = false"
+            title="Collapse to floating tab"
+          >×</button>
+          <Step1GraphBuild
+            v-if="currentStep === 1"
+            :currentPhase="currentPhase"
+            :projectData="projectData"
+            :ontologyProgress="ontologyProgress"
+            :buildProgress="buildProgress"
+            :graphData="graphData"
+            :systemLogs="systemLogs"
+            @next-step="handleNextStep"
+          />
+          <Step2EnvSetup
+            v-else-if="currentStep === 2"
+            :projectData="projectData"
+            :graphData="graphData"
+            :systemLogs="systemLogs"
+            @go-back="handleGoBack"
+            @next-step="handleNextStep"
+            @add-log="addLog"
+          />
+        </div>
       </div>
     </main>
   </div>
@@ -79,7 +86,7 @@ import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
 
 const route = useRoute()
 const router = useRouter()
-const viewMode = ref('split')
+const panelExpanded = ref(false)
 const currentStep = ref(1)
 const stepNames = ['Graph Build', 'Environment Setup', 'Start Simulation', 'Report Generation', 'Deep Interaction']
 const currentProjectId = ref(route.params.projectId)
@@ -96,14 +103,13 @@ let pollTimer = null
 let graphPollTimer = null
 
 const leftPanelStyle = computed(() => {
-  if (viewMode.value === 'graph') return { width: '100%', opacity: 1 }
-  if (viewMode.value === 'workbench') return { width: '0%', opacity: 0, overflow: 'hidden' }
-  return { width: '50%', opacity: 1 }
+  return { width: '100%', opacity: 1 }
 })
 const rightPanelStyle = computed(() => {
-  if (viewMode.value === 'workbench') return { width: '100%', opacity: 1 }
-  if (viewMode.value === 'graph') return { width: '0%', opacity: 0, overflow: 'hidden' }
-  return { width: '50%', opacity: 1 }
+  if (panelExpanded.value === false) {
+    return { position: 'fixed', bottom: '20px', right: '20px', width: '240px', height: 'auto', zIndex: 50 }
+  }
+  return { width: '50%', opacity: 1, position: 'static' }
 })
 const statusClass = computed(() => error.value ? 'err' : currentPhase.value >= 2 ? 'ok' : 'proc')
 const statusText = computed(() => {
@@ -120,7 +126,6 @@ const addLog = (msg) => {
   systemLogs.value.push({ time, msg })
   if (systemLogs.value.length > 100) systemLogs.value.shift()
 }
-const toggleMaximize = (t) => { viewMode.value = viewMode.value === t ? 'split' : t }
 const handleNextStep = (params = {}) => {
   if (currentStep.value < 5) {
     currentStep.value++
@@ -243,22 +248,12 @@ onUnmounted(() => { stopPolling(); stopGraphPolling() })
 }
 
 .mv-logo {
-  height: 20px; width: auto; cursor: pointer; display: block;
+  height: 40px; width: auto; cursor: pointer; display: block;
   opacity: 0.9; transition: opacity 0.12s;
 }
 .mv-logo:hover { opacity: 1; }
 
 .mv-header-center { position: absolute; left: 50%; transform: translateX(-50%); }
-
-.mv-switcher { display: flex; gap: 2px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); border-radius: 6px; padding: 3px; }
-.mv-sw {
-  background: transparent; border: none; padding: 4px 14px;
-  font-family: 'Roboto Mono', monospace; font-size: 0.7rem;
-  color: rgba(255,255,255,0.3); border-radius: 4px; cursor: pointer; transition: all 0.12s;
-  text-transform: lowercase; letter-spacing: 0.04em;
-}
-.mv-sw:hover { color: rgba(255,255,255,0.6); }
-.mv-sw.active { background: rgba(255,255,255,0.08); color: #fff; }
 
 .mv-header-right { display: flex; align-items: center; gap: 14px; }
 
@@ -277,7 +272,7 @@ onUnmounted(() => { stopPolling(); stopGraphPolling() })
 }
 .mv-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.2); }
 .mv-status.proc .mv-dot { background: #3b82f6; animation: blink 1.2s infinite; }
-.mv-status.ok .mv-dot { background: #22c55e; }
+.mv-status.ok .mv-dot { background: #BDEBB5; }
 .mv-status.err .mv-dot { background: #ef4444; }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
@@ -288,4 +283,107 @@ onUnmounted(() => { stopPolling(); stopGraphPolling() })
   transition: width 0.4s cubic-bezier(0.25,0.8,0.25,1), opacity 0.3s;
 }
 .mv-panel.left { border-right: 1px solid rgba(255,255,255,0.06); }
+
+/* Floating Panel Styles */
+.mv-panel.right.floating {
+  position: fixed !important;
+  bottom: 20px !important;
+  right: 20px !important;
+  width: 240px !important;
+  height: auto !important;
+  z-index: 50 !important;
+  border-radius: 12px;
+  background: rgba(8, 8, 8, 0.4) !important;
+  backdrop-filter: blur(10px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.mv-panel.right.floating:hover {
+  background: rgba(8, 8, 8, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.mv-float-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 12px;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+}
+
+.mv-tab-icon {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.6);
+  transition: all 0.3s ease;
+}
+
+.mv-float-tab:hover .mv-tab-icon {
+  color: rgba(255, 255, 255, 0.9);
+  transform: translateY(2px);
+}
+
+.mv-tab-text {
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.5);
+  text-align: center;
+  transition: color 0.3s ease;
+}
+
+.mv-float-tab:hover .mv-tab-text {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.mv-panel.right.expanded {
+  position: static !important;
+  width: 100% !important;
+  height: 100% !important;
+  background: #080808 !important;
+  backdrop-filter: none;
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: none;
+  border-radius: 0;
+}
+
+.mv-panel-content {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.mv-close-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  transition: all 0.2s ease;
+}
+
+.mv-close-panel:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: rgba(255, 255, 255, 0.9);
+}
 </style>

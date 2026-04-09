@@ -58,7 +58,7 @@
         <div class="card-content">
           <p class="api-note">POST /api/simulation/prepare</p>
           <p class="description">
- ，，Initializingitems，
+            Using the graph and simulation requirement inputs, the system generates agent profiles and simulation parameters automatically.
           </p>
 
           <!-- Profiles Stats -->
@@ -440,7 +440,7 @@
             <div class="rounds-header">
               <div class="header-left">
                 <span class="section-title">Simulation round setting</span>
-                <span class="section-desc">MiroFish automatically plans real-world simulation for <span class="desc-highlight">{{ simulationConfig?.time_config?.total_simulation_hours || '-' }}</span> hours，each round represents <span class="desc-highlight">{{ simulationConfig?.time_config?.minutes_per_round || '-' }}</span> minutesof real-time progression</span>
+                <span class="section-desc">KephalosData automatically plans real-world simulation for <span class="desc-highlight">{{ simulationConfig?.time_config?.total_simulation_hours || '-' }}</span> hours, each round represents <span class="desc-highlight">{{ simulationConfig?.time_config?.minutes_per_round || '-' }}</span> minutes of real-time progression</span>
               </div>
               <label class="switch-control">
                 <input type="checkbox" v-model="useCustomRounds">
@@ -615,19 +615,6 @@
       </div>
     </Transition>
 
-    <!-- Bottom Info / Logs -->
-    <div class="system-logs">
-      <div class="log-header">
-        <span class="log-title">SYSTEM DASHBOARD</span>
-        <span class="log-id">{{ simulationId || 'NO_SIMULATION' }}</span>
-      </div>
-      <div class="log-content" ref="logContent">
-        <div class="log-line" v-for="(log, idx) in systemLogs" :key="idx">
-          <span class="log-time">{{ log.time }}</span>
-          <span class="log-msg">{{ log.msg }}</span>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -1085,8 +1072,8 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #FAFAFA;
-  font-family: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
+  background: #080808;
+  font-family: 'Roboto Mono', 'JetBrains Mono', monospace;
 }
 
 .scroll-container {
@@ -1100,18 +1087,18 @@ onUnmounted(() => {
 
 /* Step Card */
 .step-card {
-  background: #FFF;
+  background: rgba(255,255,255,0.02);
   border-radius: 8px;
   padding: 20px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  border: 1px solid #EAEAEA;
+  box-shadow: none;
+  border: 1px solid rgba(255,255,255,0.06);
   transition: all 0.3s ease;
   position: relative;
 }
 
 .step-card.active {
-  border-color: #FF5722;
-  box-shadow: 0 4px 12px rgba(255, 87, 34, 0.08);
+  border-color: rgba(255,255,255,0.14);
+  box-shadow: none;
 }
 
 .card-header {
@@ -1131,18 +1118,23 @@ onUnmounted(() => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 20px;
   font-weight: 700;
-  color: #E0E0E0;
+  color: rgba(255,255,255,0.15);
 }
 
 .step-card.active .step-num,
 .step-card.completed .step-num {
-  color: #000;
+  color: rgba(255,255,255,0.6);
 }
 
 .step-title {
   font-weight: 600;
   font-size: 14px;
   letter-spacing: 0.5px;
+  color: rgba(255,255,255,0.5);
+}
+
+.step-card.active .step-title {
+  color: #fff;
 }
 
 .badge {
@@ -1153,10 +1145,10 @@ onUnmounted(() => {
   text-transform: uppercase;
 }
 
-.badge.success { background: #E8F5E9; color: #2E7D32; }
-.badge.processing { background: #FF5722; color: #FFF; }
-.badge.pending { background: #F5F5F5; color: #999; }
-.badge.accent { background: #E3F2FD; color: #1565C0; }
+.badge.success { background: rgba(189,235,181,0.15); color: #BDEBB5; border: 1px solid rgba(189,235,181,0.35); }
+.badge.processing { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.12); }
+.badge.pending { background: transparent; color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.07); }
+.badge.accent { background: rgba(59,130,246,0.1); color: #3b82f6; border: 1px solid rgba(59,130,246,0.2); }
 
 .card-content {
   /* No extra padding - uses step-card's padding */
@@ -1165,13 +1157,13 @@ onUnmounted(() => {
 .api-note {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: #999;
+  color: rgba(255,255,255,0.2);
   margin-bottom: 8px;
 }
 
 .description {
   font-size: 12px;
-  color: #666;
+  color: rgba(255,255,255,0.35);
   line-height: 1.5;
   margin-bottom: 16px;
 }
@@ -1204,12 +1196,13 @@ onUnmounted(() => {
 }
 
 .action-btn.secondary {
-  background: #F5F5F5;
-  color: #333;
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.6);
+  border: 1px solid rgba(255,255,255,0.1);
 }
 
 .action-btn.secondary:hover:not(:disabled) {
-  background: #E5E5E5;
+  background: rgba(255,255,255,0.1);
 }
 
 .action-btn:disabled {
@@ -1234,7 +1227,8 @@ onUnmounted(() => {
 
 /* Info Card */
 .info-card {
-  background: #F5F5F5;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
   border-radius: 6px;
   padding: 16px;
   margin-top: 16px;
@@ -1245,7 +1239,7 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding: 8px 0;
-  border-bottom: 1px dashed #E0E0E0;
+  border-bottom: 1px dashed rgba(255,255,255,0.07);
 }
 
 .info-row:last-child {
@@ -1254,12 +1248,13 @@ onUnmounted(() => {
 
 .info-label {
   font-size: 12px;
-  color: #666;
+  color: rgba(255,255,255,0.35);
 }
 
 .info-value {
   font-size: 13px;
   font-weight: 500;
+  color: rgba(255,255,255,0.65);
 }
 
 .info-value.mono {
@@ -1271,28 +1266,36 @@ onUnmounted(() => {
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
-  background: #F9F9F9;
-  padding: 16px;
+  gap: 0;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.07);
   border-radius: 6px;
+  overflow: hidden;
 }
 
 .stat-card {
   text-align: center;
 }
 
+.stat-card {
+  padding: 12px 16px;
+  border-right: 1px solid rgba(255,255,255,0.07);
+}
+.stat-card:last-child { border-right: none; }
+
 .stat-value {
   display: block;
   font-size: 20px;
   font-weight: 700;
-  color: #000;
+  color: #fff;
   font-family: 'JetBrains Mono', monospace;
 }
 
 .stat-label {
   font-size: 9px;
-  color: #999;
+  color: rgba(255,255,255,0.2);
   text-transform: uppercase;
+  letter-spacing: 0.1em;
   margin-top: 4px;
   display: block;
 }
@@ -1300,7 +1303,7 @@ onUnmounted(() => {
 /* Profiles Preview */
 .profiles-preview {
   margin-top: 20px;
-  border-top: 1px solid #E5E5E5;
+  border-top: 1px solid rgba(255,255,255,0.07);
   padding-top: 16px;
 }
 
@@ -1314,7 +1317,7 @@ onUnmounted(() => {
 .preview-title {
   font-size: 12px;
   font-weight: 600;
-  color: #666;
+  color: rgba(255,255,255,0.2);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1333,17 +1336,17 @@ onUnmounted(() => {
 }
 
 .profiles-list::-webkit-scrollbar-thumb {
-  background: #DDD;
+  background: rgba(255,255,255,0.08);
   border-radius: 2px;
 }
 
 .profiles-list::-webkit-scrollbar-thumb:hover {
-  background: #CCC;
+  background: rgba(255,255,255,0.15);
 }
 
 .profile-card {
-  background: #FAFAFA;
-  border: 1px solid #E5E5E5;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
   border-radius: 6px;
   padding: 14px;
   cursor: pointer;
@@ -1351,8 +1354,8 @@ onUnmounted(() => {
 }
 
 .profile-card:hover {
-  border-color: #999;
-  background: #FFF;
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
 }
 
 .profile-header {
@@ -1365,13 +1368,13 @@ onUnmounted(() => {
 .profile-realname {
   font-size: 14px;
   font-weight: 700;
-  color: #000;
+  color: #fff;
 }
 
 .profile-username {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: #999;
+  color: rgba(255,255,255,0.3);
 }
 
 .profile-meta {
@@ -1380,15 +1383,15 @@ onUnmounted(() => {
 
 .profile-profession {
   font-size: 11px;
-  color: #666;
-  background: #F0F0F0;
+  color: rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.05);
   padding: 2px 8px;
   border-radius: 3px;
 }
 
 .profile-bio {
   font-size: 12px;
-  color: #444;
+  color: rgba(255,255,255,0.35);
   line-height: 1.6;
   margin: 0 0 10px 0;
   display: -webkit-box;
@@ -1405,8 +1408,9 @@ onUnmounted(() => {
 
 .topic-tag {
   font-size: 10px;
-  color: #1565C0;
-  background: #E3F2FD;
+  color: #3b82f6;
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.15);
   padding: 2px 8px;
   border-radius: 10px;
 }
@@ -1425,7 +1429,7 @@ onUnmounted(() => {
 
 .config-block {
   margin-top: 16px;
-  border-top: 1px solid #E5E5E5;
+  border-top: 1px solid rgba(255,255,255,0.07);
   padding-top: 12px;
 }
 
@@ -1445,7 +1449,7 @@ onUnmounted(() => {
 .config-block-title {
   font-size: 12px;
   font-weight: 600;
-  color: #666;
+  color: rgba(255,255,255,0.2);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -1453,8 +1457,9 @@ onUnmounted(() => {
 .config-block-badge {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  background: #F1F5F9;
-  color: #475569;
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.4);
+  border: 1px solid rgba(255,255,255,0.08);
   padding: 2px 8px;
   border-radius: 10px;
 }
@@ -1467,7 +1472,8 @@ onUnmounted(() => {
 }
 
 .config-item {
-  background: #F9F9F9;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
   padding: 12px 14px;
   border-radius: 6px;
   display: flex;
@@ -1477,14 +1483,14 @@ onUnmounted(() => {
 
 .config-item-label {
   font-size: 11px;
-  color: #94A3B8;
+  color: rgba(255,255,255,0.25);
 }
 
 .config-item-value {
   font-family: 'JetBrains Mono', monospace;
   font-size: 16px;
   font-weight: 600;
-  color: #1E293B;
+  color: #fff;
 }
 
 /* Time Periods */
@@ -1500,21 +1506,22 @@ onUnmounted(() => {
   align-items: center;
   gap: 12px;
   padding: 8px 12px;
-  background: #F9F9F9;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 6px;
 }
 
 .period-label {
   font-size: 12px;
   font-weight: 500;
-  color: #64748B;
+  color: rgba(255,255,255,0.4);
   min-width: 70px;
 }
 
 .period-hours {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  color: #475569;
+  color: rgba(255,255,255,0.3);
   flex: 1;
 }
 
@@ -1522,8 +1529,9 @@ onUnmounted(() => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   font-weight: 600;
-  color: #6366F1;
-  background: #EEF2FF;
+  color: #818CF8;
+  background: rgba(99,102,241,0.1);
+  border: 1px solid rgba(99,102,241,0.2);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -1543,25 +1551,25 @@ onUnmounted(() => {
 }
 
 .agents-cards::-webkit-scrollbar-thumb {
-  background: #DDD;
+  background: rgba(255,255,255,0.08);
   border-radius: 2px;
 }
 
 .agents-cards::-webkit-scrollbar-thumb:hover {
-  background: #CCC;
+  background: rgba(255,255,255,0.15);
 }
 
 .agent-card {
-  background: #F9F9F9;
-  border: 1px solid #E5E5E5;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
   border-radius: 6px;
   padding: 14px;
   transition: all 0.2s ease;
 }
 
 .agent-card:hover {
-  border-color: #999;
-  background: #FFF;
+  border-color: rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.05);
 }
 
 /* Agent Card Header */
@@ -1571,7 +1579,7 @@ onUnmounted(() => {
   align-items: flex-start;
   margin-bottom: 14px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #F1F5F9;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 
 .agent-identity {
@@ -1583,13 +1591,13 @@ onUnmounted(() => {
 .agent-id {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: #94A3B8;
+  color: rgba(255,255,255,0.25);
 }
 
 .agent-name {
   font-size: 14px;
   font-weight: 600;
-  color: #1E293B;
+  color: #fff;
 }
 
 .agent-tags {
@@ -1599,8 +1607,9 @@ onUnmounted(() => {
 
 .agent-type {
   font-size: 10px;
-  color: #64748B;
-  background: #F1F5F9;
+  color: rgba(255,255,255,0.35);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.07);
   padding: 2px 8px;
   border-radius: 4px;
 }
@@ -1614,23 +1623,23 @@ onUnmounted(() => {
 }
 
 .stance-neutral {
-  background: #F1F5F9;
-  color: #64748B;
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.4);
 }
 
 .stance-supportive {
-  background: #DCFCE7;
-  color: #16A34A;
+  background: rgba(34,197,94,0.1);
+  color: #22c55e;
 }
 
 .stance-opposing {
-  background: #FEE2E2;
-  color: #DC2626;
+  background: rgba(239,68,68,0.1);
+  color: #ef4444;
 }
 
 .stance-observer {
-  background: #FEF3C7;
-  color: #D97706;
+  background: rgba(245,158,11,0.1);
+  color: #f59e0b;
 }
 
 /* Agent Timeline */
@@ -1641,7 +1650,7 @@ onUnmounted(() => {
 .timeline-label {
   display: block;
   font-size: 10px;
-  color: #94A3B8;
+  color: rgba(255,255,255,0.25);
   margin-bottom: 6px;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1651,14 +1660,15 @@ onUnmounted(() => {
   display: flex;
   gap: 2px;
   height: 16px;
-  background: #F8FAFC;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 4px;
   padding: 3px;
 }
 
 .timeline-hour {
   flex: 1;
-  background: #E2E8F0;
+  background: rgba(255,255,255,0.07);
   border-radius: 2px;
   transition: all 0.2s;
 }
@@ -1697,14 +1707,14 @@ onUnmounted(() => {
 
 .param-item .param-label {
   font-size: 10px;
-  color: #94A3B8;
+  color: rgba(255,255,255,0.25);
 }
 
 .param-item .param-value {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   font-weight: 600;
-  color: #475569;
+  color: rgba(255,255,255,0.6);
 }
 
 .param-value.with-bar {
@@ -1722,19 +1732,19 @@ onUnmounted(() => {
 }
 
 .param-value.positive {
-  color: #16A34A;
+  color: #22c55e;
 }
 
 .param-value.negative {
-  color: #DC2626;
+  color: #ef4444;
 }
 
 .param-value.neutral {
-  color: #64748B;
+  color: rgba(255,255,255,0.4);
 }
 
 .param-value.highlight {
-  color: #6366F1;
+  color: #818CF8;
 }
 
 /* Platforms Grid */
@@ -1745,7 +1755,8 @@ onUnmounted(() => {
 }
 
 .platform-card {
-  background: #F9F9F9;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
   padding: 14px;
   border-radius: 6px;
 }
@@ -1753,13 +1764,13 @@ onUnmounted(() => {
 .platform-card-header {
   margin-bottom: 10px;
   padding-bottom: 8px;
-  border-bottom: 1px solid #E5E5E5;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 
 .platform-name {
   font-size: 13px;
   font-weight: 600;
-  color: #333;
+  color: rgba(255,255,255,0.7);
 }
 
 .platform-params {
@@ -1776,14 +1787,14 @@ onUnmounted(() => {
 
 .param-label {
   font-size: 12px;
-  color: #64748B;
+  color: rgba(255,255,255,0.35);
 }
 
 .param-value {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
   font-weight: 600;
-  color: #1E293B;
+  color: rgba(255,255,255,0.65);
 }
 
 /* Reasoning Content */
@@ -1795,13 +1806,14 @@ onUnmounted(() => {
 
 .reasoning-item {
   padding: 12px 14px;
-  background: #F9F9F9;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
   border-radius: 6px;
 }
 
 .reasoning-text {
   font-size: 13px;
-  color: #555;
+  color: rgba(255,255,255,0.4);
   line-height: 1.7;
   margin: 0;
 }
@@ -1822,7 +1834,8 @@ onUnmounted(() => {
 }
 
 .profile-modal {
-  background: #FFF;
+  background: #0f0f0f;
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 16px;
   width: 90%;
   max-width: 600px;
@@ -1830,7 +1843,7 @@ onUnmounted(() => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
 }
 
 .modal-header {
@@ -1838,8 +1851,8 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: flex-start;
   padding: 24px;
-  background: #FFF;
-  border-bottom: 1px solid #F0F0F0;
+  background: #0f0f0f;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
 }
 
 .modal-header-info {
@@ -1856,19 +1869,20 @@ onUnmounted(() => {
 .modal-realname {
   font-size: 20px;
   font-weight: 700;
-  color: #000;
+  color: #fff;
 }
 
 .modal-username {
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
-  color: #999;
+  color: rgba(255,255,255,0.3);
 }
 
 .modal-profession {
   font-size: 12px;
-  color: #666;
-  background: #F5F5F5;
+  color: rgba(255,255,255,0.4);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
   padding: 4px 10px;
   border-radius: 4px;
   display: inline-block;
@@ -1880,7 +1894,7 @@ onUnmounted(() => {
   height: 32px;
   border: none;
   background: none;
-  color: #999;
+  color: rgba(255,255,255,0.3);
   border-radius: 50%;
   font-size: 24px;
   cursor: pointer;
@@ -1893,7 +1907,7 @@ onUnmounted(() => {
 }
 
 .close-btn:hover {
-  color: #333;
+  color: #fff;
 }
 
 .modal-body {
@@ -1921,7 +1935,7 @@ onUnmounted(() => {
 
 .info-label {
   font-size: 11px;
-  color: #999;
+  color: rgba(255,255,255,0.25);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   font-weight: 600;
@@ -1930,12 +1944,12 @@ onUnmounted(() => {
 .info-value {
   font-size: 15px;
   font-weight: 600;
-  color: #333;
+  color: rgba(255,255,255,0.7);
 }
 
 .info-value.mbti {
   font-family: 'JetBrains Mono', monospace;
-  color: #FF5722;
+  color: #f59e0b;
 }
 
 /* */
@@ -1947,7 +1961,7 @@ onUnmounted(() => {
   display: block;
   font-size: 11px;
   font-weight: 600;
-  color: #999;
+  color: rgba(255,255,255,0.2);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 12px;
@@ -1955,13 +1969,13 @@ onUnmounted(() => {
 
 .section-bio {
   font-size: 14px;
-  color: #333;
+  color: rgba(255,255,255,0.5);
   line-height: 1.6;
   margin: 0;
   padding: 16px;
-  background: #F9F9F9;
+  background: rgba(255,255,255,0.03);
   border-radius: 6px;
-  border-left: 3px solid #E0E0E0;
+  border-left: 3px solid rgba(255,255,255,0.1);
 }
 
 /* */
@@ -1973,17 +1987,17 @@ onUnmounted(() => {
 
 .topic-item {
   font-size: 11px;
-  color: #1565C0;
-  background: #E3F2FD;
+  color: #3b82f6;
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.15);
   padding: 4px 10px;
   border-radius: 12px;
   transition: all 0.2s;
-  border: none;
 }
 
 .topic-item:hover {
-  background: #BBDEFB;
-  color: #0D47A1;
+  background: rgba(59,130,246,0.2);
+  color: #60a5fa;
 }
 
 /* Detailed Persona */
@@ -1995,30 +2009,32 @@ onUnmounted(() => {
 }
 
 .dimension-card {
-  background: #F8F9FA;
+  background: rgba(255,255,255,0.03);
   padding: 12px;
   border-radius: 6px;
-  border-left: 3px solid #DDD;
+  border-left: 3px solid rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-left-width: 3px;
   transition: all 0.2s;
 }
 
 .dimension-card:hover {
-  background: #F0F0F0;
-  border-left-color: #999;
+  background: rgba(255,255,255,0.05);
+  border-left-color: rgba(255,255,255,0.3);
 }
 
 .dim-title {
   display: block;
   font-size: 12px;
   font-weight: 700;
-  color: #333;
+  color: rgba(255,255,255,0.65);
   margin-bottom: 4px;
 }
 
 .dim-desc {
   display: block;
   font-size: 10px;
-  color: #888;
+  color: rgba(255,255,255,0.3);
   line-height: 1.4;
 }
 
@@ -2036,13 +2052,13 @@ onUnmounted(() => {
 }
 
 .persona-content::-webkit-scrollbar-thumb {
-  background: #DDD;
+  background: rgba(255,255,255,0.08);
   border-radius: 2px;
 }
 
 .section-persona {
   font-size: 13px;
-  color: #555;
+  color: rgba(255,255,255,0.4);
   line-height: 1.8;
   margin: 0;
   text-align: justify;
@@ -2061,11 +2077,11 @@ onUnmounted(() => {
 .log-header {
   display: flex;
   justify-content: space-between;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
   padding-bottom: 8px;
   margin-bottom: 8px;
   font-size: 10px;
-  color: #888;
+  color: rgba(255,255,255,0.2);
 }
 
 .log-content {
@@ -2107,8 +2123,8 @@ onUnmounted(() => {
 .spinner-sm {
   width: 16px;
   height: 16px;
-  border: 2px solid #E5E5E5;
-  border-top-color: #FF5722;
+  border: 2px solid rgba(255,255,255,0.1);
+  border-top-color: rgba(255,255,255,0.5);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }
@@ -2128,18 +2144,18 @@ onUnmounted(() => {
   display: block;
   font-size: 12px;
   font-weight: 600;
-  color: #666;
+  color: rgba(255,255,255,0.2);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 12px;
 }
 
 .narrative-box {
-  background: #FFFFFF;
+  background: rgba(255,255,255,0.03);
   padding: 20px 24px;
   border-radius: 12px;
-  border: 1px solid #EEF2F6;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  box-shadow: none;
   transition: all 0.3s ease;
 }
 
@@ -2147,7 +2163,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #666;
+  color: rgba(255,255,255,0.2);
   font-size: 13px;
   letter-spacing: 0.5px;
   margin-bottom: 12px;
@@ -2164,9 +2180,9 @@ onUnmounted(() => {
 }
 
 .narrative-text {
-  font-family: 'Inter', 'Noto Sans SC', system-ui, sans-serif;
+  font-family: 'Roboto Mono', monospace;
   font-size: 14px;
-  color: #334155;
+  color: rgba(255,255,255,0.5);
   line-height: 1.8;
   margin: 0;
   text-align: justify;
@@ -2174,7 +2190,7 @@ onUnmounted(() => {
 }
 
 .topics-section {
-  background: #FFF;
+  background: transparent;
 }
 
 .hot-topics-grid {
@@ -2185,8 +2201,9 @@ onUnmounted(() => {
 
 .hot-topic-tag {
   font-size: 12px;
-  color:rgba(255, 86, 34, 0.88);
-  background: #FFF3E0;
+  color: #f59e0b;
+  background: rgba(245,158,11,0.1);
+  border: 1px solid rgba(245,158,11,0.15);
   padding: 4px 10px;
   border-radius: 12px;
   font-weight: 500;
@@ -2194,12 +2211,12 @@ onUnmounted(() => {
 
 .hot-topic-more {
   font-size: 11px;
-  color: #999;
+  color: rgba(255,255,255,0.25);
   padding: 4px 6px;
 }
 
 .initial-posts-section {
-  border-top: 1px solid #EAEAEA;
+  border-top: 1px solid rgba(255,255,255,0.07);
   padding-top: 16px;
 }
 
@@ -2208,7 +2225,7 @@ onUnmounted(() => {
   flex-direction: column;
   gap: 16px;
   padding-left: 8px;
-  border-left: 2px solid #F0F0F0;
+  border-left: 2px solid rgba(255,255,255,0.07);
   margin-top: 12px;
 }
 
@@ -2223,14 +2240,14 @@ onUnmounted(() => {
   top: 14px;
   width: 12px;
   height: 2px;
-  background: #DDD;
+  background: rgba(255,255,255,0.1);
 }
 
 .timeline-content {
-  background: #F9F9F9;
+  background: rgba(255,255,255,0.03);
   padding: 12px;
   border-radius: 6px;
-  border: 1px solid #EEE;
+  border: 1px solid rgba(255,255,255,0.07);
 }
 
 .post-header {
@@ -2242,7 +2259,7 @@ onUnmounted(() => {
 .post-role {
   font-size: 11px;
   font-weight: 700;
-  color: #333;
+  color: rgba(255,255,255,0.5);
   text-transform: uppercase;
 }
 
@@ -2256,7 +2273,7 @@ onUnmounted(() => {
 .post-username {
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
-  color: #666;
+  color: rgba(255,255,255,0.3);
   line-height: 1;
   vertical-align: baseline;
 }

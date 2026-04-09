@@ -3,64 +3,60 @@
     <!-- Header -->
     <header class="app-header">
       <div class="header-left">
-        <div class="brand" @click="router.push('/')">KEPHALOS DATA</div>
-      </div>
-      
-      <div class="header-center">
-        <div class="view-switcher">
-          <button 
-            v-for="mode in ['graph', 'split', 'workbench']" 
-            :key="mode"
-            class="switch-btn"
-            :class="{ active: viewMode === mode }"
-            @click="viewMode = mode"
-          >
-            {{ { graph: 'Graph', split: 'Split', workbench: 'Workbench' }[mode] }}
-          </button>
-        </div>
+        <img src="/kephalos-logo.png" alt="KEPHALOS" class="mv-logo" @click="router.push('/')" />
       </div>
 
+      <div class="header-center"></div>
+
       <div class="header-right">
-        <div class="workflow-step">
-          <span class="step-num">Step 3/5</span>
-          <span class="step-name">Start Simulation</span>
-        </div>
-        <div class="step-divider"></div>
-        <span class="status-indicator" :class="statusClass">
-          <span class="dot"></span>
-          {{ statusText }}
+        <span class="mv-step-tag">
+          <span class="mv-step-n">3/5</span>
+          Start Simulation
+        </span>
+        <span class="mv-sep"></span>
+        <span class="mv-status" :class="statusClass">
+          <span class="mv-dot"></span>{{ statusText }}
         </span>
       </div>
     </header>
 
     <!-- Main Content Area -->
-    <main class="content-area">
-      <!-- Left Panel: Graph -->
-      <div class="panel-wrapper left" :style="leftPanelStyle">
-        <GraphPanel 
+    <main class="mv-content">
+      <div class="mv-panel left" :style="leftPanelStyle">
+        <GraphPanel
           :graphData="graphData"
           :loading="graphLoading"
           :currentPhase="3"
           :isSimulating="isSimulating"
           @refresh="refreshGraph"
-          @toggle-maximize="toggleMaximize('graph')"
         />
       </div>
 
-      <!-- Right Panel: Step3 Start Simulation -->
-      <div class="panel-wrapper right" :style="rightPanelStyle">
-        <Step3Simulation
-          :simulationId="currentSimulationId"
-          :maxRounds="maxRounds"
-          :minutesPerRound="minutesPerRound"
-          :projectData="projectData"
-          :graphData="graphData"
-          :systemLogs="systemLogs"
-          @go-back="handleGoBack"
-          @next-step="handleNextStep"
-          @add-log="addLog"
-          @update-status="updateStatus"
-        />
+      <div
+        class="mv-panel right"
+        :class="{ floating: !panelExpanded, expanded: panelExpanded }"
+        :style="rightPanelStyle"
+        @click="panelExpanded = true"
+      >
+        <div v-if="!panelExpanded" class="mv-float-tab">
+          <div class="mv-tab-icon">◆</div>
+          <div class="mv-tab-text">WORKBENCH</div>
+        </div>
+        <div v-else class="mv-panel-content">
+          <button class="mv-close-panel" @click.stop="panelExpanded = false" title="Collapse to floating tab">×</button>
+          <Step3Simulation
+            :simulationId="currentSimulationId"
+            :maxRounds="maxRounds"
+            :minutesPerRound="minutesPerRound"
+            :projectData="projectData"
+            :graphData="graphData"
+            :systemLogs="systemLogs"
+            @go-back="handleGoBack"
+            @next-step="handleNextStep"
+            @add-log="addLog"
+            @update-status="updateStatus"
+          />
+        </div>
       </div>
     </main>
   </div>
@@ -83,7 +79,7 @@ const props = defineProps({
 })
 
 // Layout State
-const viewMode = ref('split')
+const panelExpanded = ref(false)
 
 // Data State
 const currentSimulationId = ref(route.params.simulationId)
@@ -97,16 +93,13 @@ const systemLogs = ref([])
 const currentStatus = ref('processing') // processing | completed | error
 
 // --- Computed Layout Styles ---
-const leftPanelStyle = computed(() => {
-  if (viewMode.value === 'graph') return { width: '100%', opacity: 1, transform: 'translateX(0)' }
-  if (viewMode.value === 'workbench') return { width: '0%', opacity: 0, transform: 'translateX(-20px)' }
-  return { width: '50%', opacity: 1, transform: 'translateX(0)' }
-})
+const leftPanelStyle = computed(() => ({ width: '100%', opacity: 1 }))
 
 const rightPanelStyle = computed(() => {
-  if (viewMode.value === 'workbench') return { width: '100%', opacity: 1, transform: 'translateX(0)' }
-  if (viewMode.value === 'graph') return { width: '0%', opacity: 0, transform: 'translateX(20px)' }
-  return { width: '50%', opacity: 1, transform: 'translateX(0)' }
+  if (!panelExpanded.value) {
+    return { position: 'fixed', bottom: '20px', right: '20px', width: '240px', height: 'auto', zIndex: 50 }
+  }
+  return { width: '50%', opacity: 1, position: 'static' }
 })
 
 // --- Status Computed ---
@@ -133,15 +126,6 @@ const addLog = (msg) => {
 
 const updateStatus = (status) => {
   currentStatus.value = status
-}
-
-// --- Layout Methods ---
-const toggleMaximize = (target) => {
-  if (viewMode.value === target) {
-    viewMode.value = 'split'
-  } else {
-    viewMode.value = target
-  }
 }
 
 const handleGoBack = async () => {
@@ -315,137 +299,115 @@ onUnmounted(() => {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background: var(--page-bg);
+  background: #080808;
   overflow: hidden;
-  font-family: 'Space Grotesk', 'Noto Sans SC', system-ui, sans-serif;
+  font-family: 'Roboto Mono', 'JetBrains Mono', monospace;
 }
 
 /* Header */
 .app-header {
-  height: 56px;
-  border-bottom: 1px solid var(--line-strong);
+  flex-shrink: 0;
+  height: 52px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  background: rgba(8,8,8,0.97);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  background: var(--page-bg);
-  z-index: 100;
   position: relative;
-  color: var(--text-primary);
+  z-index: 10;
 }
 
-.header-center {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
+.mv-logo {
+  height: 40px; width: auto; cursor: pointer; display: block;
+  opacity: 0.9; transition: opacity 0.12s;
 }
+.mv-logo:hover { opacity: 1; }
 
-.brand {
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 800;
-  font-size: 1rem;
-  letter-spacing: 0.16em;
-  color: #f4ecdc;
-  text-shadow: 0 0 8px rgba(232, 224, 208, 0.2);
-  cursor: pointer;
+.header-center { position: absolute; left: 50%; transform: translateX(-50%); }
+
+.header-right { display: flex; align-items: center; gap: 14px; }
+
+.mv-step-tag {
+  font-family: 'Roboto Mono', monospace; font-size: 0.7rem;
+  color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 8px;
 }
+.mv-step-n { color: rgba(255,255,255,0.2); }
 
-.view-switcher {
-  display: flex;
-  background: var(--panel-muted);
-  padding: 4px;
-  border-radius: 6px;
-  gap: 4px;
+.mv-sep { width: 1px; height: 14px; background: rgba(255,255,255,0.08); }
+
+.mv-status {
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Roboto Mono', monospace; font-size: 0.66rem;
+  color: rgba(255,255,255,0.35); letter-spacing: 0.06em;
 }
-
-.switch-btn {
-  border: none;
-  background: transparent;
-  padding: 6px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.switch-btn.active {
-  background: var(--panel-active);
-  color: var(--text-primary);
-  border: 1px solid var(--line-soft);
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.workflow-step {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-}
-
-.step-num {
-  font-family: 'JetBrains Mono', monospace;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-.step-name {
-  font-weight: 700;
-  color: var(--text-primary);
-}
-
-.step-divider {
-  width: 1px;
-  height: 14px;
-  background-color: var(--line-soft);
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--text-secondary);
-  font-weight: 500;
-}
-
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #CCC;
-}
-
-.status-indicator.processing .dot { background: #FF5722; animation: pulse 1s infinite; }
-.status-indicator.completed .dot { background: #4CAF50; }
-.status-indicator.error .dot { background: #F44336; }
-
-@keyframes pulse { 50% { opacity: 0.5; } }
+.mv-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+.mv-status.processing .mv-dot { background: #3b82f6; animation: blink 1.2s infinite; }
+.mv-status.completed .mv-dot { background: #BDEBB5; }
+.mv-status.error .mv-dot { background: #ef4444; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
 /* Content */
-.content-area {
-  flex: 1;
-  display: flex;
-  position: relative;
-  color: var(--text-primary);
-  overflow: hidden;
+.mv-content { flex: 1; display: flex; overflow: hidden; }
+
+.mv-panel {
+  height: 100%; overflow: hidden;
+  transition: width 0.4s cubic-bezier(0.25,0.8,0.25,1), opacity 0.3s;
+}
+.mv-panel.left { border-right: 1px solid rgba(255,255,255,0.06); }
+
+.mv-panel.right.floating {
+  position: fixed !important;
+  bottom: 20px !important; right: 20px !important;
+  width: 240px !important; height: auto !important;
+  z-index: 50 !important;
+  border-radius: 12px;
+  background: rgba(8,8,8,0.4) !important;
+  backdrop-filter: blur(10px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  overflow: hidden; cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25,0.8,0.25,1);
+}
+.mv-panel.right.floating:hover {
+  background: rgba(8,8,8,0.5) !important;
+  border-color: rgba(255,255,255,0.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
 }
 
-.panel-wrapper {
-  height: 100%;
-  overflow: hidden;
-  transition: width 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease, transform 0.3s ease;
-  will-change: width, opacity, transform;
+.mv-float-tab {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 16px 12px; gap: 8px; width: 100%; height: 100%;
+}
+.mv-tab-icon { font-size: 20px; color: rgba(255,255,255,0.6); transition: all 0.3s ease; }
+.mv-float-tab:hover .mv-tab-icon { color: rgba(255,255,255,0.9); transform: translateY(2px); }
+.mv-tab-text {
+  font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em;
+  color: rgba(255,255,255,0.5); text-align: center; transition: color 0.3s ease;
+}
+.mv-float-tab:hover .mv-tab-text { color: rgba(255,255,255,0.8); }
+
+.mv-panel.right.expanded {
+  position: static !important; width: 100% !important; height: 100% !important;
+  background: #080808 !important; backdrop-filter: none;
+  border: none; border-left: 1px solid rgba(255,255,255,0.06);
+  box-shadow: none; border-radius: 0;
 }
 
-.panel-wrapper.left {
-  border-right: 1px solid var(--line-strong);
+.mv-panel-content { width: 100%; height: 100%; overflow: hidden; position: relative; }
+
+.mv-close-panel {
+  position: absolute; top: 10px; right: 10px;
+  width: 28px; height: 28px;
+  background: transparent; border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.6); font-size: 18px; cursor: pointer;
+  border-radius: 4px; display: flex; align-items: center; justify-content: center;
+  z-index: 100; transition: all 0.2s ease;
+}
+.mv-close-panel:hover {
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255,255,255,0.4); color: rgba(255,255,255,0.9);
 }
 </style>
 

@@ -17,7 +17,7 @@ from ..config import Config
 from ..utils.logger import get_logger
 from .zep_entity_reader import EntityNode, ZepEntityReader
 
-logger = get_logger('mirofish.oasis_profile')
+logger = get_logger('kephalosdata.oasis_profile')
 
 
 @dataclass
@@ -392,6 +392,19 @@ class OasisProfileGenerator:
     def _build_individual_persona_prompt(self, entity_name, entity_type, entity_summary, entity_attributes, context):
         attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "None"
         context_str = (context or "")[:3000] or "No additional context"
+        
+        # Add diversity based on entity type
+        type_specific_instructions = {
+            "student": "Focus on academic interests, social activism, and peer interactions. Include study habits and campus life.",
+            "alumni": "Emphasize career progression, networking, and giving back to alma mater. Include professional achievements.",
+            "professor": "Highlight research expertise, teaching philosophy, and academic collaborations. Include publication history.",
+            "expert": "Stress specialized knowledge, consulting work, and thought leadership. Include industry impact.",
+            "journalist": "Focus on investigative reporting, news sourcing, and media ethics. Include beat specialization.",
+            "activist": "Emphasize social causes, community organizing, and advocacy work. Include movement participation."
+        }
+        
+        type_instruction = type_specific_instructions.get(entity_type.lower(), "Create a realistic social media persona with authentic behaviors and interests.")
+        
         return f"""Generate a detailed social media user persona for this entity.
 
 Entity Name: {entity_name}
@@ -402,22 +415,37 @@ Entity Attributes: {attrs_str}
 Context:
 {context_str}
 
-Return JSON with these fields:
-1. bio: Social media bio (~200 words)
-2. persona: Detailed persona (~2000 words plain text) including: basic info, background, personality, social media behavior, stance, unique traits, personal memory
-3. age: Integer
-4. gender: "male" or "female"
-5. mbti: MBTI type (e.g. INTJ)
-6. country: Country in English
-7. profession: Occupation
-8. interested_topics: Array of topics
+{type_instruction}
 
-Important: All values must be strings or numbers, no newlines. Use English for all fields.
+Return JSON with these fields:
+1. bio: Social media bio (~200 words) - make it engaging and authentic
+2. persona: Detailed persona (~2000 words plain text) including: basic info, background, personality, social media behavior, stance, unique traits, personal memory, communication style, and interaction patterns
+3. age: Integer (realistic for the entity type)
+4. gender: "male" or "female" (or "other" if not applicable)
+5. mbti: MBTI type (choose realistically based on personality traits)
+6. country: Country in English (realistic for the entity)
+7. profession: Occupation (specific and realistic)
+8. interested_topics: Array of 3-8 topics (diverse and relevant)
+
+Important: All values must be strings or numbers, no newlines in strings. Use English for all fields. Make the persona highly detailed and realistic.
 """
 
     def _build_group_persona_prompt(self, entity_name, entity_type, entity_summary, entity_attributes, context):
         attrs_str = json.dumps(entity_attributes, ensure_ascii=False) if entity_attributes else "None"
         context_str = (context or "")[:3000] or "No additional context"
+        
+        # Add diversity for group entities
+        group_instructions = {
+            "university": "Focus on academic excellence, research output, student life, and institutional communications. Include alumni network and campus events.",
+            "governmentagency": "Emphasize public service, policy announcements, transparency, and official communications. Include regulatory focus and public engagement.",
+            "ngo": "Highlight mission-driven work, advocacy campaigns, community impact, and fundraising efforts. Include volunteer coordination and awareness raising.",
+            "mediaoutlet": "Focus on editorial standards, news coverage, audience engagement, and journalistic integrity. Include content strategy and media partnerships.",
+            "company": "Emphasize corporate values, product/service promotion, industry leadership, and employee culture. Include innovation and market position.",
+            "organization": "Focus on organizational goals, member engagement, community building, and collaborative initiatives. Include governance and stakeholder relations."
+        }
+        
+        group_instruction = group_instructions.get(entity_type.lower(), "Create a professional organizational account with authentic communications and engagement patterns.")
+        
         return f"""Generate a detailed social media profile for this organization/group entity.
 
 Entity Name: {entity_name}
@@ -428,17 +456,19 @@ Entity Attributes: {attrs_str}
 Context:
 {context_str}
 
-Return JSON with these fields:
-1. bio: Official bio (~200 words, professional)
-2. persona: Detailed account profile (~2000 words) including: institution info, account positioning, communication style, content, stance, operational habits, institutional memory
-3. age: Always 30
-4. gender: Always "other"
-5. mbti: MBTI describing account style
-6. country: Country in English
-7. profession: Institutional function
-8. interested_topics: Array of focus areas
+{group_instruction}
 
-Important: All values must be strings or numbers, no null, no newlines. Use English for all fields.
+Return JSON with these fields:
+1. bio: Official bio (~200 words, professional and engaging)
+2. persona: Detailed account profile (~2000 words) including: institution info, account positioning, communication style, content strategy, engagement patterns, stance on issues, operational habits, institutional memory, and stakeholder interactions
+3. age: Always 30 (represents established entity)
+4. gender: Always "other"
+5. mbti: MBTI describing account personality (e.g. ISTJ for formal, ENFJ for engaging)
+6. country: Country in English (realistic for the organization)
+7. profession: Institutional function/role
+8. interested_topics: Array of 3-8 focus areas (relevant to mission)
+
+Important: All values must be strings or numbers, no null, no newlines. Use English for all fields. Make the profile highly detailed and authentic to the organization's character.
 """
 
     def _generate_profile_rule_based(self, entity_name, entity_type, entity_summary, entity_attributes):

@@ -9,7 +9,7 @@ import functools
 from typing import Callable, Any, Optional, Type, Tuple
 from ..utils.logger import get_logger
 
-logger = get_logger('mirofish.retry')
+logger = get_logger('kephalosdata.retry')
 
 
 def retry_with_backoff(
@@ -52,17 +52,17 @@ def retry_with_backoff(
                     last_exception = e
                     
                     if attempt == max_retries:
-                        logger.error(f"函数 {func.__name__} 在 {max_retries} 次重试后仍失败: {str(e)}")
+                        logger.error(f"Function {func.__name__} failed after {max_retries} retries: {str(e)}")
                         raise
                     
-                    # 计算延迟
+                    # Calculate delay
                     current_delay = min(delay, max_delay)
                     if jitter:
                         current_delay = current_delay * (0.5 + random.random())
                     
                     logger.warning(
-                        f"函数 {func.__name__} 第 {attempt + 1} 次尝试失败: {str(e)}, "
-                        f"{current_delay:.1f}秒后重试..."
+                        f"Function {func.__name__} attempt {attempt + 1} failed: {str(e)}, "
+                        f"retrying in {current_delay:.1f} seconds..."
                     )
                     
                     if on_retry:
@@ -105,7 +105,7 @@ def retry_with_backoff_async(
                     last_exception = e
                     
                     if attempt == max_retries:
-                        logger.error(f"异步函数 {func.__name__} 在 {max_retries} 次重试后仍失败: {str(e)}")
+                        logger.error(f"Async function {func.__name__} failed after {max_retries} retries: {str(e)}")
                         raise
                     
                     current_delay = min(delay, max_delay)
@@ -113,8 +113,8 @@ def retry_with_backoff_async(
                         current_delay = current_delay * (0.5 + random.random())
                     
                     logger.warning(
-                        f"异步函数 {func.__name__} 第 {attempt + 1} 次尝试失败: {str(e)}, "
-                        f"{current_delay:.1f}秒后重试..."
+                        f"Async function {func.__name__} attempt {attempt + 1} failed: {str(e)}, "
+                        f"retrying in {current_delay:.1f} seconds..."
                     )
                     
                     if on_retry:

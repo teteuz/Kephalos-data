@@ -1,7 +1,10 @@
 <template>
   <router-view />
 </template>
-<script setup></script>
+
+<script setup>
+</script>
+
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@300;400;500;700&display=swap');
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
@@ -16,7 +19,7 @@
   --text2: rgba(255,255,255,0.55);
   --text3: rgba(255,255,255,0.28);
   --text4: rgba(255,255,255,0.12);
-  --green: #22c55e;
+  --green: #BDEBB5;
   --red:   #ef4444;
   --amber: #f59e0b;
   --blue:  #3b82f6;
@@ -39,3 +42,4 @@ button { font-family: inherit; cursor: pointer; }
 .card-desc,.modal-label,.modal-file-name,.divider-text,.hint-text,.info-value { color: var(--text2) !important; }
 .card-footer,.modal-requirement,.modal-empty,.file-item,.files-empty { background: var(--bg2) !important; border-color: var(--border) !important; }
 </style>
+

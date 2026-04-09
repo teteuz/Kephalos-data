@@ -138,32 +138,23 @@
         <div class="wb-step-body">
           <span class="wb-endpoint">POST /api/simulation/create</span>
           <p class="wb-desc">Graph build is complete. Continue to the next step: Environment Setup.</p>
-          <button
-            class="wb-action"
-            :disabled="currentPhase < 2 || creatingSimulation"
-            @click="handleEnterEnvSetup"
-          >
-            <span v-if="creatingSimulation" class="wb-spinner"></span>
-            {{ creatingSimulation ? 'Creating simulation...' : 'Go to Environment Setup →' }}
-          </button>
         </div>
       </div>
 
     </div>
 
-    <!-- System log -->
-    <div class="wb-log">
-      <div class="wb-log-header">
-        <span class="wb-log-label">SYSTEM DASHBOARD</span>
-        <span class="wb-log-id">{{ projectData?.project_id || 'NO_PROJECT' }}</span>
-      </div>
-      <div class="wb-log-body" ref="logContent">
-        <div class="wb-log-line" v-for="(log, i) in systemLogs" :key="i">
-          <span class="wb-log-time">{{ log.time }}</span>
-          <span class="wb-log-msg">{{ log.msg }}</span>
-        </div>
-      </div>
+    <!-- Sticky action button -->
+    <div v-if="currentPhase >= 2" class="wb-action-bar">
+      <button
+        class="wb-action"
+        :disabled="creatingSimulation"
+        @click="handleEnterEnvSetup"
+      >
+        <span v-if="creatingSimulation" class="wb-spinner"></span>
+        {{ creatingSimulation ? 'Creating simulation...' : 'Go to Environment Setup →' }}
+      </button>
     </div>
+
   </div>
 </template>
 
@@ -282,7 +273,7 @@ watch(() => props.systemLogs.length, () => {
   font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em;
   padding: 3px 8px; border-radius: 3px;
 }
-.wb-badge--ok { background: rgba(34,197,94,0.1); color: #22c55e; border: 1px solid rgba(34,197,94,0.25); }
+.wb-badge--ok { background: rgba(189,235,181,0.15); color: #BDEBB5; border: 1px solid rgba(189,235,181,0.35); }
 .wb-badge--run { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.12); animation: blink 1.5s infinite; }
 .wb-badge--idle { background: transparent; color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.07); }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
@@ -353,6 +344,14 @@ watch(() => props.systemLogs.length, () => {
 }
 .wb-bar-fill { height: 100%; background: rgba(255,255,255,0.4); border-radius: 1px; transition: width 0.5s ease; }
 .wb-bar-pct { font-size: 0.65rem; color: rgba(255,255,255,0.3); min-width: 30px; text-align: right; }
+
+/* Sticky action bar */
+.wb-action-bar {
+  flex-shrink: 0;
+  padding: 10px 16px;
+  background: #080808;
+  border-top: 1px solid rgba(255,255,255,0.07);
+}
 
 /* Action button */
 .wb-action {
