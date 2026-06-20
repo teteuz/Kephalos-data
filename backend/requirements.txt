@@ -8,6 +8,8 @@
 # ============= Core Framework =============
 flask>=3.0.0
 flask-cors>=6.0.0
+flask-limiter>=3.5.0
+gunicorn>=21.0.0
 
 # ============= LLM =============
 # OpenAI SDK (unified OpenAI format for LLM calls)
@@ -26,6 +28,10 @@ PyMuPDF>=1.24.0
 # Encoding detection (supports non-UTF-8 text files)
 charset-normalizer>=3.0.0
 chardet>=5.0.0
+
+# ============= Stripe + Supabase (auth & subscriptions) =============
+stripe>=10.0.0
+supabase>=2.0.0
 
 # ============= Utility Libraries =============
 # Environment variable loading

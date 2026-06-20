@@ -14,11 +14,26 @@ from ..services.graph_builder import GraphBuilderService
 from ..services.text_processor import TextProcessor
 from ..utils.file_parser import FileParser
 from ..utils.logger import get_logger
+from ..utils.supabase_client import get_supabase_admin
 from ..models.task import TaskManager, TaskStatus
 from ..models.project import ProjectManager, ProjectStatus
 
 # Get logger
 logger = get_logger('kephalosdata.api')
+
+
+def _get_user_id_from_request():
+    """Extract user_id from Bearer token. Returns user_id string or None."""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return None
+    token = auth_header.split(' ', 1)[1]
+    try:
+        result = get_supabase_admin().auth.get_user(token)
+        user = result.user
+        return user.id if user else None
+    except Exception:
+        return None
 
 
 def allowed_file(filename: str) -> bool:
@@ -55,6 +70,10 @@ def list_projects():
     """
     列出所有项目
     """
+    user_id = _get_user_id_from_request()
+    if not user_id:
+        return jsonify({"success": False, "error": "Authentication required"}), 401
+
     limit = request.args.get('limit', 50, type=int)
     projects = ProjectManager.list_projects(limit=limit)
     
@@ -162,48 +181,42 @@ def generate_ontology():
                 "error": "请提供模拟需求描述 (simulation_requirement)"
             }), 400
         
-        # 获取上传的文件
+        # 获取上传的文件（可选）
         uploaded_files = request.files.getlist('files')
-        if not uploaded_files or all(not f.filename for f in uploaded_files):
-            return jsonify({
-                "success": False,
-                "error": "请至少上传一个文档文件"
-            }), 400
-        
+        has_files = uploaded_files and any(f.filename for f in uploaded_files)
+
         # 创建项目
         project = ProjectManager.create_project(name=project_name)
         project.simulation_requirement = simulation_requirement
         logger.info(f"创建项目: {project.project_id}")
-        
+
         # 保存文件并提取文本
         document_texts = []
         all_text = ""
-        
-        for file in uploaded_files:
-            if file and file.filename and allowed_file(file.filename):
-                # 保存文件到项目目录
-                file_info = ProjectManager.save_file_to_project(
-                    project.project_id, 
-                    file, 
-                    file.filename
-                )
-                project.files.append({
-                    "filename": file_info["original_filename"],
-                    "size": file_info["size"]
-                })
-                
-                # 提取文本
-                text = FileParser.extract_text(file_info["path"])
-                text = TextProcessor.preprocess_text(text)
-                document_texts.append(text)
-                all_text += f"\n\n=== {file_info['original_filename']} ===\n{text}"
-        
+
+        if has_files:
+            for file in uploaded_files:
+                if file and file.filename and allowed_file(file.filename):
+                    file_info = ProjectManager.save_file_to_project(
+                        project.project_id,
+                        file,
+                        file.filename
+                    )
+                    project.files.append({
+                        "filename": file_info["original_filename"],
+                        "size": file_info["size"]
+                    })
+
+                    text = FileParser.extract_text(file_info["path"])
+                    text = TextProcessor.preprocess_text(text)
+                    document_texts.append(text)
+                    all_text += f"\n\n=== {file_info['original_filename']} ===\n{text}"
+
+        # Se nenhum arquivo foi processado, usa o próprio requisito de simulação como contexto
         if not document_texts:
-            ProjectManager.delete_project(project.project_id)
-            return jsonify({
-                "success": False,
-                "error": "没有成功处理任何文档，请检查文件格式"
-            }), 400
+            document_texts = [simulation_requirement]
+            all_text = simulation_requirement
+            logger.info("Nenhum arquivo fornecido — usando simulation_requirement como documento de entrada")
         
         # 保存提取的文本
         project.total_text_length = len(all_text)
@@ -248,8 +261,7 @@ def generate_ontology():
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -518,8 +530,7 @@ def build_graph():
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -583,8 +594,7 @@ def get_graph_data(graph_id: str):
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -611,6 +621,5 @@ def delete_graph(graph_id: str):
     except Exception as e:
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500

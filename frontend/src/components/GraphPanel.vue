@@ -23,17 +23,54 @@
     </div>
     
     <div class="graph-container" ref="graphContainer">
-      <!-- Overlay animated background video -->
-      <video class="graph-bg-video" src="/ai orb 2.webm" autoplay loop muted playsinline preload="auto"></video>
-
       <!-- Tooltip -->
       <div v-if="tooltip.visible" class="graph-tooltip" :style="{ left: tooltip.x + 'px', top: tooltip.y + 'px' }">
         <div class="tooltip-title">{{ tooltip.title }}</div>
         <div class="tooltip-content">{{ tooltip.content }}</div>
       </div>
 
-      <!-- Graph visualization -->
-      <div v-if="graphData" class="graph-view">
+      <!-- Mobile node list (replaces globe on small screens) -->
+      <div v-if="graphData && isMobile" class="mobile-graph-list">
+        <div class="mgl-header">
+          <span class="mgl-title">Entidades do Grafo</span>
+          <span class="mgl-count">{{ (graphData.nodes || []).length }} nós · {{ (graphData.edges || []).length }} arestas</span>
+        </div>
+        <input v-model="mobileSearch" class="mgl-search" placeholder="Buscar nó..." />
+        <div class="mgl-nodes">
+          <div
+            v-for="node in filteredMobileNodes"
+            :key="node.uuid"
+            class="mgl-node"
+            :class="{ selected: selectedItem && selectedItem.data && selectedItem.data.uuid === node.uuid }"
+            @click="selectMobileNode(node)"
+          >
+            <span class="mgl-dot" :style="{ background: getNodeColor(node) }"></span>
+            <span class="mgl-name">{{ node.name || 'Unnamed' }}</span>
+            <span class="mgl-type">{{ getNodeType(node) }}</span>
+          </div>
+        </div>
+        <!-- Detail panel reused -->
+        <div v-if="selectedItem" class="detail-panel mgl-detail">
+          <div class="detail-panel-header">
+            <span class="detail-title">{{ selectedItem.type === 'node' ? 'Detalhes' : 'Relação' }}</span>
+            <span v-if="selectedItem.type === 'node'" class="detail-type-badge" :style="{ background: selectedItem.color, color: '#fff' }">{{ selectedItem.entityType }}</span>
+            <button class="detail-close" @click="closeDetailPanel">×</button>
+          </div>
+          <div class="detail-content" v-if="selectedItem.type === 'node'">
+            <div class="detail-row">
+              <span class="detail-label">Name:</span>
+              <span class="detail-value">{{ selectedItem.data.name }}</span>
+            </div>
+            <div class="detail-section" v-if="selectedItem.data.summary">
+              <div class="section-title">Summary:</div>
+              <div class="summary-text">{{ selectedItem.data.summary }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Graph visualization (desktop only) -->
+      <div v-if="graphData && !isMobile" class="graph-view">
         <svg ref="graphSvg" class="graph-svg"></svg>
         
  <!-- Building/ -->
@@ -106,7 +143,60 @@
               <div class="section-title">Summary:</div>
               <div class="summary-text">{{ selectedItem.data.summary }}</div>
             </div>
-            
+
+            <!-- Agent Profile: Emotional Baseline -->
+            <div class="detail-section" v-if="selectedItem.agentProfile">
+              <div class="section-title">Agent Profile</div>
+              <div class="agent-profile-card">
+                <div class="ap-row">
+                  <span class="ap-label">Persona</span>
+                  <span class="ap-value ap-tier" :class="'tier-' + selectedItem.agentProfile.socioeconomic_tier">
+                    {{ selectedItem.agentProfile.socioeconomic_tier }}
+                  </span>
+                </div>
+                <div class="ap-row" v-if="selectedItem.agentProfile.profession">
+                  <span class="ap-label">Role</span>
+                  <span class="ap-value">{{ selectedItem.agentProfile.profession }}</span>
+                </div>
+                <div class="ap-row" v-if="selectedItem.agentProfile.country">
+                  <span class="ap-label">Country</span>
+                  <span class="ap-value">{{ selectedItem.agentProfile.country }}</span>
+                </div>
+                <div class="ap-row" v-if="selectedItem.agentProfile.mbti">
+                  <span class="ap-label">MBTI</span>
+                  <span class="ap-value">{{ selectedItem.agentProfile.mbti }}</span>
+                </div>
+
+                <!-- Emotional baseline bars -->
+                <div class="ap-emotions" v-if="selectedItem.agentProfile.emotional_baseline">
+                  <div class="ap-emo-label">Emotional Baseline</div>
+                  <div
+                    v-for="(val, key) in selectedItem.agentProfile.emotional_baseline"
+                    :key="key"
+                    class="ap-emo-row"
+                  >
+                    <span class="ap-emo-key">{{ key }}</span>
+                    <div class="ap-emo-bar-track">
+                      <div class="ap-emo-bar" :style="{ width: (val * 100) + '%', background: emoColor(key) }"></div>
+                    </div>
+                    <span class="ap-emo-val">{{ (val * 100).toFixed(0) }}</span>
+                  </div>
+                </div>
+
+                <!-- Cognitive biases -->
+                <div class="ap-biases" v-if="selectedItem.agentProfile.cognitive_biases?.length">
+                  <div class="ap-emo-label">Cognitive Biases</div>
+                  <div class="ap-bias-list">
+                    <span
+                      v-for="bias in selectedItem.agentProfile.cognitive_biases"
+                      :key="bias"
+                      class="ap-bias-tag"
+                    >{{ bias.replace(/_/g, ' ') }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <!-- Labels -->
             <div class="detail-section" v-if="selectedItem.data.labels && selectedItem.data.labels.length > 0">
               <div class="section-title">Labels:</div>
@@ -241,13 +331,6 @@
       </div>
     </div>
     
-    <div v-if="graphData" class="edge-labels-toggle">
-      <label class="toggle-switch">
-        <input type="checkbox" v-model="showEdgeLabels" />
-        <span class="slider"></span>
-      </label>
-      <span class="toggle-label">{{ showEdgeLabels ? 'Hide Edge Labels' : 'Show Edge Labels' }}</span>
-    </div>
 
   </div>
 </template>
@@ -260,7 +343,8 @@ const props = defineProps({
   graphData: Object,
   loading: Boolean,
   currentPhase: Number,
-  isSimulating: Boolean
+  isSimulating: Boolean,
+  agentProfiles: { type: Array, default: () => [] }
 })
 
 const emit = defineEmits(['refresh', 'toggle-maximize', 'pause-simulation', 'resume-simulation'])
@@ -268,8 +352,37 @@ const emit = defineEmits(['refresh', 'toggle-maximize', 'pause-simulation', 'res
 const graphContainer = ref(null)
 const graphSvg = ref(null)
 const selectedItem = ref(null)
-const showEdgeLabels = ref(true) // 
-const expandedSelfLoops = ref(new Set()) // 
+const expandedSelfLoops = ref(new Set())
+const isMobile = ref(false)
+const mobileSearch = ref('')
+
+const filteredMobileNodes = computed(() => {
+  const nodes = props.graphData?.nodes || []
+  const q = mobileSearch.value.trim().toLowerCase()
+  if (!q) return nodes
+  return nodes.filter(n => (n.name || '').toLowerCase().includes(q))
+})
+
+const getNodeType = (node) => node.labels?.find(l => l !== 'Entity') || 'Entity'
+const getNodeColor = (node) => {
+  const colors = ['#3b82f6','#f59e0b','#10b981','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899','#14b8a6','#a3e635']
+  const type = getNodeType(node)
+  const idx = entityTypes.value.findIndex(t => t.name === type)
+  return colors[idx >= 0 ? idx % colors.length : 0]
+}
+
+const selectMobileNode = (node) => {
+  const type = getNodeType(node)
+  selectedItem.value = {
+    type: 'node',
+    data: node,
+    color: getNodeColor(node),
+    entityType: type,
+    agentProfile: getAgentProfile(node.name)
+  }
+}
+
+//
 const showSimulationFinishedHint = ref(false) // 
 const wasSimulating = ref(false) // 
 const tooltip = ref({ visible: false, x: 0, y: 0, title: '', content: '' })
@@ -352,519 +465,321 @@ const formatDateTime = (dateStr) => {
 
 const closeDetailPanel = () => {
   selectedItem.value = null
- expandedSelfLoops.value = new Set() // 
+ expandedSelfLoops.value = new Set() //
 }
 
-let currentSimulation = null
+// Profile lookup by entity name
+const getAgentProfile = (entityName) => {
+  if (!props.agentProfiles?.length || !entityName) return null
+  const lower = entityName.toLowerCase()
+  return props.agentProfiles.find(p =>
+    p.name?.toLowerCase() === lower ||
+    p.user_name?.toLowerCase().includes(lower.split(' ')[0].toLowerCase())
+  ) || null
+}
+
+// Emotion color coding
+const emoColor = (key) => {
+  const map = {
+    valence: '#BDEBB5',
+    anxiety: '#f59e0b',
+    trust: '#3b82f6',
+    excitability: '#ec4899'
+  }
+  return map[key] || (isDarkTheme() ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.3)')
+}
+
+let animationRef = null
 let linkLabelsRef = null
 let linkLabelBgRef = null
 
+const isDarkTheme = () => document.documentElement.getAttribute('data-theme') === 'dark'
+
+const themeColors = () => {
+  const dark = isDarkTheme()
+  return {
+    gridLat:   dark ? 'rgba(255,255,255,0.055)' : 'rgba(0,0,0,0.045)',
+    gridLon:   dark ? 'rgba(255,255,255,0.04)'  : 'rgba(0,0,0,0.03)',
+    link:      dark ? 'rgba(255,255,255,0.18)'   : 'rgba(0,0,0,0.15)',
+    nodeBg:    dark ? '#060a0f' : '#f0f0f2',
+    labelFill: dark ? 'rgba(255,255,255,0.82)'   : 'rgba(0,0,0,0.75)',
+  }
+}
+
 const renderGraph = () => {
   if (!graphSvg.value || !props.graphData) return
-  
- // 
-  if (currentSimulation) {
-    currentSimulation.stop()
-  }
-  
+
+  if (animationRef) { cancelAnimationFrame(animationRef); animationRef = null }
+
   const container = graphContainer.value
   const width = container.clientWidth
   const height = container.clientHeight
-  
+
   const svg = d3.select(graphSvg.value)
-    .attr('width', width)
-    .attr('height', height)
+    .attr('width', width).attr('height', height)
     .attr('viewBox', `0 0 ${width} ${height}`)
-    
   svg.selectAll('*').remove()
-  
+
   const nodesData = props.graphData.nodes || []
   const edgesData = props.graphData.edges || []
-  
   if (nodesData.length === 0) return
 
-  // Prep data
   const nodeMap = {}
   nodesData.forEach(n => nodeMap[n.uuid] = n)
-  
+
   const nodes = nodesData.map(n => ({
     id: n.uuid,
     name: n.name || 'Unnamed',
     type: n.labels?.find(l => l !== 'Entity') || 'Entity',
-    rawData: n
+    rawData: n,
+    _sx: 0, _sy: 0, _sz: 0,
+    _px: 0, _py: 0, _pz: 0, _scale: 1, _r: 8, _opacity: 1
   }))
-  
+
   const nodeIds = new Set(nodes.map(n => n.id))
-  
- // ，
-  const edgePairCount = {}
- const selfLoopEdges = {} // 
-  const tempEdges = edgesData
-    .filter(e => nodeIds.has(e.source_node_uuid) && nodeIds.has(e.target_node_uuid))
-  
- // ，
-  tempEdges.forEach(e => {
-    if (e.source_node_uuid === e.target_node_uuid) {
- // - 
-      if (!selfLoopEdges[e.source_node_uuid]) {
-        selfLoopEdges[e.source_node_uuid] = []
-      }
-      selfLoopEdges[e.source_node_uuid].push({
-        ...e,
-        source_name: nodeMap[e.source_node_uuid]?.name,
-        target_name: nodeMap[e.target_node_uuid]?.name
-      })
-    } else {
-      const pairKey = [e.source_node_uuid, e.target_node_uuid].sort().join('_')
-      edgePairCount[pairKey] = (edgePairCount[pairKey] || 0) + 1
-    }
+  const nodeById = {}
+  nodes.forEach(n => nodeById[n.id] = n)
+
+  // Fibonacci sphere distribution
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5))
+  nodes.forEach((nd, i) => {
+    const y = nodes.length === 1 ? 0 : 1 - (i / (nodes.length - 1)) * 2
+    const r = Math.sqrt(Math.max(0, 1 - y * y))
+    nd._sx = Math.cos(goldenAngle * i) * r
+    nd._sy = y
+    nd._sz = Math.sin(goldenAngle * i) * r
   })
-  
- // 
-  const edgePairIndex = {}
- const processedSelfLoopNodes = new Set() // 
-  
+
+  // Build edges (skip self-loops — no meaningful arc on globe)
+  const seen = new Set()
   const edges = []
-  
-  tempEdges.forEach(e => {
-    const isSelfLoop = e.source_node_uuid === e.target_node_uuid
-    
-    if (isSelfLoop) {
- // - items
-      if (processedSelfLoopNodes.has(e.source_node_uuid)) {
- return // ，
-      }
-      processedSelfLoopNodes.add(e.source_node_uuid)
-      
-      const allSelfLoops = selfLoopEdges[e.source_node_uuid]
-      const nodeName = nodeMap[e.source_node_uuid]?.name || 'Unknown'
-      
+  edgesData
+    .filter(e => nodeIds.has(e.source_node_uuid) && nodeIds.has(e.target_node_uuid) && e.source_node_uuid !== e.target_node_uuid)
+    .forEach(e => {
+      const key = [e.source_node_uuid, e.target_node_uuid].sort().join('_')
+      if (seen.has(key)) return
+      seen.add(key)
       edges.push({
-        source: e.source_node_uuid,
-        target: e.target_node_uuid,
-        type: 'SELF_LOOP',
-        name: `Self Relations (${allSelfLoops.length})`,
-        curvature: 0,
-        isSelfLoop: true,
-        rawData: {
-          isSelfLoopGroup: true,
-          source_name: nodeName,
-          target_name: nodeName,
-          selfLoopCount: allSelfLoops.length,
- selfLoopEdges: allSelfLoops // 
-        }
+        source: nodeById[e.source_node_uuid],
+        target: nodeById[e.target_node_uuid],
+        name: e.name || e.fact_type || 'RELATED',
+        rawData: { ...e, source_name: nodeMap[e.source_node_uuid]?.name, target_name: nodeMap[e.target_node_uuid]?.name }
       })
-      return
-    }
-    
-    const pairKey = [e.source_node_uuid, e.target_node_uuid].sort().join('_')
-    const totalCount = edgePairCount[pairKey]
-    const currentIndex = edgePairIndex[pairKey] || 0
-    edgePairIndex[pairKey] = currentIndex + 1
-    
- // （UUID < UUID）
-    const isReversed = e.source_node_uuid > e.target_node_uuid
-    
- // ：，
-    let curvature = 0
-    if (totalCount > 1) {
- // ，
- // ，
-      const curvatureRange = Math.min(1.2, 0.6 + totalCount * 0.15)
-      curvature = ((currentIndex / (totalCount - 1)) - 0.5) * curvatureRange * 2
-      
- // ，
- // ，
-      if (isReversed) {
-        curvature = -curvature
-      }
-    }
-    
-    edges.push({
-      source: e.source_node_uuid,
-      target: e.target_node_uuid,
-      type: e.fact_type || e.name || 'RELATED',
-      name: e.name || e.fact_type || 'RELATED',
-      curvature,
-      isSelfLoop: false,
-      pairIndex: currentIndex,
-      pairTotal: totalCount,
-      rawData: {
-        ...e,
-        source_name: nodeMap[e.source_node_uuid]?.name,
-        target_name: nodeMap[e.target_node_uuid]?.name
-      }
     })
-  })
-    
-  // Color scale
+
+  // Colors
   const colorMap = {}
   entityTypes.value.forEach(t => colorMap[t.name] = t.color)
-  const getColor = (type) => colorMap[type] || '#999'
+  const getColor = (type) => colorMap[type] || '#888'
 
- // Simulation - 
-  const simulation = d3.forceSimulation(nodes)
-    .force('link', d3.forceLink(edges).id(d => d.id).distance(d => {
- // 
- // 150， 40
-      const baseDistance = 150
-      const edgeCount = d.pairTotal || 1
-      return baseDistance + (edgeCount - 1) * 50
-    }))
-    .force('charge', d3.forceManyBody().strength(-400))
-    .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collide', d3.forceCollide(50))
- // ，
-    .force('x', d3.forceX(width / 2).strength(0.04))
-    .force('y', d3.forceY(height / 2).strength(0.04))
-  
-  currentSimulation = simulation
+  // Sphere geometry
+  const cx = width / 2, cy = height / 2
+  const sphereR = Math.min(width, height) * 0.36
 
-  const g = svg.append('g')
-  
-  // Zoom
-  svg.call(d3.zoom().extent([[0, 0], [width, height]]).scaleExtent([0.1, 4]).on('zoom', (event) => {
-    g.attr('transform', event.transform)
-  }))
+  // SVG defs
+  const defs = svg.append('defs')
 
- // Links - path 
-  const linkGroup = g.append('g').attr('class', 'links')
-  
- // 
-  const getLinkPath = (d) => {
-    const sx = d.source.x, sy = d.source.y
-    const tx = d.target.x, ty = d.target.y
-    
- // 
-    if (d.isSelfLoop) {
- // ：items
-      const loopRadius = 30
- // ，
- const x1 = sx + 8 // 
-      const y1 = sy - 4
- const x2 = sx + 8 // 
-      const y2 = sy + 4
- // （sweep-flag=1 ）
-      return `M${x1},${y1} A${loopRadius},${loopRadius} 0 1,1 ${x2},${y2}`
-    }
-    
-    if (d.curvature === 0) {
- // 
-      return `M${sx},${sy} L${tx},${ty}`
-    }
-    
- // - 
-    const dx = tx - sx, dy = ty - sy
-    const dist = Math.sqrt(dx * dx + dy * dy)
- // ，，
- // ，
-    const pairTotal = d.pairTotal || 1
- const offsetRatio = 0.25 + pairTotal * 0.05 // 25%，5%
-    const baseOffset = Math.max(35, dist * offsetRatio)
-    const offsetX = -dy / dist * d.curvature * baseOffset
-    const offsetY = dx / dist * d.curvature * baseOffset
-    const cx = (sx + tx) / 2 + offsetX
-    const cy = (sy + ty) / 2 + offsetY
-    
-    return `M${sx},${sy} Q${cx},${cy} ${tx},${ty}`
-  }
-  
- // （）
-  const getLinkMidpoint = (d) => {
-    const sx = d.source.x, sy = d.source.y
-    const tx = d.target.x, ty = d.target.y
-    
- // 
-    if (d.isSelfLoop) {
- // ：
-      return { x: sx + 70, y: sy }
-    }
-    
-    if (d.curvature === 0) {
-      return { x: (sx + tx) / 2, y: (sy + ty) / 2 }
-    }
-    
- // t=0.5
-    const dx = tx - sx, dy = ty - sy
-    const dist = Math.sqrt(dx * dx + dy * dy)
-    const pairTotal = d.pairTotal || 1
-    const offsetRatio = 0.25 + pairTotal * 0.05
-    const baseOffset = Math.max(35, dist * offsetRatio)
-    const offsetX = -dy / dist * d.curvature * baseOffset
-    const offsetY = dx / dist * d.curvature * baseOffset
-    const cx = (sx + tx) / 2 + offsetX
-    const cy = (sy + ty) / 2 + offsetY
-    
- // B(t) = (1-t)²P0 + 2(1-t)tP1 + t²P2, t=0.5
-    const midX = 0.25 * sx + 0.5 * cx + 0.25 * tx
-    const midY = 0.25 * sy + 0.5 * cy + 0.25 * ty
-    
-    return { x: midX, y: midY }
-  }
-  
-  const link = linkGroup.selectAll('path')
-    .data(edges)
-    .enter().append('path')
-    .attr('stroke', 'rgba(255,255,255,0.12)')
-    .attr('stroke-width', 1.2)
-    .attr('fill', 'none')
+  // Clip to sphere
+  defs.append('clipPath').attr('id', 'sph-clip')
+    .append('circle').attr('cx', cx).attr('cy', cy).attr('r', sphereR - 1)
+
+
+  // ── Graph groups (clipped to sphere) ──
+  const g = svg.append('g').attr('clip-path', 'url(#sph-clip)')
+  const gridGroup = g.append('g')
+  const linkGroup = g.append('g')
+  const nodeGroup = g.append('g')
+
+  // Zoom + pan
+  svg.call(d3.zoom().extent([[0,0],[width,height]]).scaleExtent([0.3,4]).on('zoom', ev => g.attr('transform', ev.transform)))
+
+  // Grid lines — latitude (5) and longitude (8)
+  const latPts  = [-Math.PI/3, -Math.PI/6, 0, Math.PI/6, Math.PI/3].map(lat =>
+    Array.from({length: 73}, (_, i) => {
+      const lon = (i / 72) * Math.PI * 2
+      return { sx: Math.cos(lat)*Math.cos(lon), sy: Math.sin(lat), sz: Math.cos(lat)*Math.sin(lon) }
+    })
+  )
+  const lonPts = Array.from({length: 8}, (_, k) => k * Math.PI / 4).map(lon =>
+    Array.from({length: 73}, (_, i) => {
+      const lat = (i / 72) * Math.PI - Math.PI/2
+      return { sx: Math.cos(lat)*Math.cos(lon), sy: Math.sin(lat), sz: Math.cos(lat)*Math.sin(lon) }
+    })
+  )
+
+  const tc = themeColors()
+  const latPaths = latPts.map(pts =>
+    gridGroup.append('path').datum(pts).attr('fill','none')
+      .attr('stroke', tc.gridLat).attr('stroke-width', 0.6).style('pointer-events','none')
+  )
+  const lonPaths = lonPts.map(pts =>
+    gridGroup.append('path').datum(pts).attr('fill','none')
+      .attr('stroke', tc.gridLon).attr('stroke-width', 0.5).style('pointer-events','none')
+  )
+
+  // Edges
+  const link = linkGroup.selectAll('path').data(edges).enter().append('path')
+    .attr('fill', 'none').attr('stroke', tc.link).attr('stroke-width', 1)
     .style('cursor', 'pointer')
     .on('click', (event, d) => {
       event.stopPropagation()
- // 
-      linkGroup.selectAll('path').attr('stroke', '#C0C0C0').attr('stroke-width', 1.5)
-      linkLabelBg.attr('fill', 'rgba(20,25,40,0.92)')
-      linkLabels.attr('fill', 'rgba(255,255,255,0.45)')
- // 
-      d3.select(event.target).attr('stroke', '#3b82f6').attr('stroke-width', 2.5)
-      
-      selectedItem.value = {
-        type: 'edge',
-        data: d.rawData
-      }
-      d3.select(event.target).attr('stroke', '#BDEBB5').attr('stroke-width', 2.5)
+      linkGroup.selectAll('path').attr('stroke', themeColors().link).attr('stroke-width', 1)
+      d3.select(event.target).attr('stroke','#BDEBB5').attr('stroke-width', 2)
+      selectedItem.value = { type: 'edge', data: d.rawData }
     })
 
- // Link labels background ()
-  const linkLabelBg = linkGroup.selectAll('rect')
-    .data(edges)
-    .enter().append('rect')
-    .attr('fill', 'rgba(20,25,40,0.92)')
-    .attr('rx', 3)
-    .attr('ry', 3)
+  // Hidden label placeholders (tick-compat)
+  const linkLabelBg = linkGroup.selectAll('rect').data([]).enter().append('rect').style('display','none')
+  const linkLabels  = linkGroup.selectAll('text').data([]).enter().append('text').style('display','none')
+  linkLabelsRef = linkLabels; linkLabelBgRef = linkLabelBg
+
+  // Nodes
+  const node = nodeGroup.selectAll('circle').data(nodes, d => d.id).enter().append('circle')
+    .attr('r', 8).attr('fill', d => getColor(d.type))
+    .attr('stroke', tc.nodeBg).attr('stroke-width', 1.5)
     .style('cursor', 'pointer')
-    .style('pointer-events', 'all')
-    .style('display', showEdgeLabels.value ? 'block' : 'none')
     .on('click', (event, d) => {
       event.stopPropagation()
-      linkGroup.selectAll('path').attr('stroke', '#C0C0C0').attr('stroke-width', 1.5)
-      linkLabelBg.attr('fill', 'rgba(20,25,40,0.92)')
-      linkLabels.attr('fill', 'rgba(255,255,255,0.45)')
- // 
-      link.filter(l => l === d).attr('stroke', '#BDEBB5').attr('stroke-width', 2.5)
-      d3.select(event.target).attr('fill', 'rgba(189,235,181,0.2)')
-      
+      node.attr('stroke', themeColors().nodeBg).attr('stroke-width', 1.5)
+      linkGroup.selectAll('path').attr('stroke', themeColors().link).attr('stroke-width', 1)
+      d3.select(event.target).attr('stroke','#BDEBB5').attr('stroke-width', 2.5)
+      link.filter(l => l.source?.id === d.id || l.target?.id === d.id)
+        .attr('stroke','rgba(189,235,181,0.55)').attr('stroke-width', 1.8)
       selectedItem.value = {
-        type: 'edge',
-        data: d.rawData
-      }
-    })
-
-  // Link labels
-  const linkLabels = linkGroup.selectAll('text')
-    .data(edges)
-    .enter().append('text')
-    .text(d => d.name)
-    .attr('font-size', '9px')
-    .attr('fill', 'rgba(255,255,255,0.45)')
-    .attr('text-anchor', 'middle')
-    .attr('dominant-baseline', 'middle')
-    .style('cursor', 'pointer')
-    .style('pointer-events', 'all')
-    .style('font-family', 'system-ui, sans-serif')
-    .style('display', showEdgeLabels.value ? 'block' : 'none')
-    .on('click', (event, d) => {
-      event.stopPropagation()
-      linkGroup.selectAll('path').attr('stroke', '#C0C0C0').attr('stroke-width', 1.5)
-      linkLabelBg.attr('fill', 'rgba(20,25,40,0.92)')
-      linkLabels.attr('fill', 'rgba(255,255,255,0.45)')
- // 
-      link.filter(l => l === d).attr('stroke', '#BDEBB5').attr('stroke-width', 2.5)
-      d3.select(event.target).attr('fill', '#BDEBB5')
-      
-      selectedItem.value = {
-        type: 'edge',
-        data: d.rawData
-      }
-    })
-    .on('mouseenter', (event, d) => {
-      showTooltip(event, d, 'edge')
-    })
-    .on('mouseleave', () => {
-      hideTooltip()
-    })
-  
- // 
-  linkLabelsRef = linkLabels
-  linkLabelBgRef = linkLabelBg
-
-  // Nodes group
-  const nodeGroup = g.append('g').attr('class', 'nodes')
-  
-  // Node circles
-  const node = nodeGroup.selectAll('circle')
-    .data(nodes)
-    .enter().append('circle')
-    .attr('r', 10)
-    .attr('fill', d => getColor(d.type))
-    .attr('stroke', '#0a0a0a')
-    .attr('stroke-width', 1.5)
-    .style('cursor', 'pointer')
-    .style('transition', 'r 0.3s ease, stroke 0.3s ease, stroke-width 0.3s ease')
-    .call(d3.drag()
-      .on('start', (event, d) => {
- // ，（）
-        d.fx = d.x
-        d.fy = d.y
-        d._dragStartX = event.x
-        d._dragStartY = event.y
-        d._isDragging = false
-      })
-      .on('drag', (event, d) => {
- // （）
-        const dx = event.x - d._dragStartX
-        const dy = event.y - d._dragStartY
-        const distance = Math.sqrt(dx * dx + dy * dy)
-        
-        if (!d._isDragging && distance > 3) {
- // ，
-          d._isDragging = true
-          simulation.alphaTarget(0.3).restart()
+          type: 'node',
+          data: d.rawData,
+          color: getColor(d.type),
+          entityType: d.type,
+          agentProfile: getAgentProfile(d.name)
         }
-        
-        if (d._isDragging) {
-          d.fx = event.x
-          d.fy = event.y
-        }
-      })
-      .on('end', (event, d) => {
- // 结束拖拽后流畅过渡
-        if (d._isDragging) {
-          simulation.alphaTarget(0.15).restart()
-          setTimeout(() => {
-            simulation.alphaTarget(0)
-          }, 500)
-        }
-
-        // 持续保持节点位置一小段时间，以免立即回弹断开
-        d.fx = event.x
-        d.fy = event.y
-        setTimeout(() => {
-          d.fx = null
-          d.fy = null
-        }, 300)
-
-        d._isDragging = false
-      })
-    )
-    .on('click', (event, d) => {
-      event.stopPropagation()
- // 
-      node.transition().duration(300).attr('r', 10).attr('stroke', '#0a0a0a').attr('stroke-width', 1.5)
-      linkGroup.selectAll('path').transition().duration(300).attr('stroke', '#C0C0C0').attr('stroke-width', 1.5)
- // 
-      d3.select(event.target).transition().duration(300).attr('r', 14).attr('stroke', '#BDEBB5').attr('stroke-width', 3)
- // 
-      link.filter(l => l.source.id === d.id || l.target.id === d.id)
-        .transition().duration(300)
-        .attr('stroke', '#BDEBB5')
-        .attr('stroke-width', 2)
-      
-      selectedItem.value = {
-        type: 'node',
-        data: d.rawData,
-        entityType: d.type,
-        color: getColor(d.type)
-      }
     })
     .on('mouseenter', (event, d) => {
       if (!selectedItem.value || selectedItem.value.data?.uuid !== d.rawData.uuid) {
-        d3.select(event.target).transition().duration(200).attr('r', 12).attr('stroke', 'rgba(189,235,181,0.8)').attr('stroke-width', 2)
+        d3.select(event.target).attr('r', d._r * 1.45).attr('stroke','rgba(189,235,181,0.8)').attr('stroke-width', 2)
         showTooltip(event, d, 'node')
       }
     })
     .on('mouseleave', (event, d) => {
       if (!selectedItem.value || selectedItem.value.data?.uuid !== d.rawData.uuid) {
-        d3.select(event.target).transition().duration(200).attr('r', 10).attr('stroke', '#0a0a0a').attr('stroke-width', 1.5)
+        d3.select(event.target).attr('r', d._r).attr('stroke', themeColors().nodeBg).attr('stroke-width', 1.5)
         hideTooltip()
       }
     })
 
-  // Node Labels
-  const nodeLabels = nodeGroup.selectAll('text')
-    .data(nodes)
-    .enter().append('text')
-    .text(d => d.name.length > 8 ? d.name.substring(0, 8) + '…' : d.name)
-    .attr('font-size', '11px')
-    .attr('fill', 'rgba(255,255,255,0.75)')
-    .attr('font-weight', '500')
-    .attr('dx', 14)
-    .attr('dy', 4)
-    .style('pointer-events', 'none')
-    .style('font-family', 'system-ui, sans-serif')
+  // Node labels
+  const nodeLabels = nodeGroup.selectAll('text').data(nodes, d => d.id).enter().append('text')
+    .text(d => d.name.length > 10 ? d.name.substring(0, 10) + '…' : d.name)
+    .attr('font-size','11px').attr('fill', tc.labelFill).attr('font-weight','500')
+    .attr('dx', 13).attr('dy', 4)
+    .style('pointer-events','none').style('font-family','system-ui, sans-serif')
 
-  simulation.on('tick', () => {
- // 
-    link.attr('d', d => getLinkPath(d))
-    
- // （None，）
-    linkLabels.each(function(d) {
-      const mid = getLinkMidpoint(d)
-      d3.select(this)
-        .attr('x', mid.x)
-        .attr('y', mid.y)
- .attr('transform', '') // ，
+  // ── 3D projection (Y-rotation + slight X tilt) ──
+  const TILT = 0.22
+  let rotY = 0
+  let rotSpeed = 0.004
+
+  const project = (sx, sy, sz) => {
+    const x1 = sx * Math.cos(rotY) - sz * Math.sin(rotY)
+    const z1 = sx * Math.sin(rotY) + sz * Math.cos(rotY)
+    const y2 = sy * Math.cos(TILT) - z1 * Math.sin(TILT)
+    const z2 = sy * Math.sin(TILT) + z1 * Math.cos(TILT)
+    const p  = 2.6 / (2.6 + z2)
+    return { x: cx + x1 * sphereR * p, y: cy + y2 * sphereR * p, z: z2, scale: p }
+  }
+
+  const gridPath = (pts) => {
+    let d = '', prev = false
+    pts.forEach(pt => {
+      const p = project(pt.sx, pt.sy, pt.sz)
+      if (p.z > -0.6) { d += (prev ? 'L' : 'M') + p.x.toFixed(1) + ',' + p.y.toFixed(1); prev = true }
+      else prev = false
     })
-    
- // 
-    linkLabelBg.each(function(d, i) {
-      const mid = getLinkMidpoint(d)
-      const textEl = linkLabels.nodes()[i]
-      const bbox = textEl.getBBox()
-      d3.select(this)
-        .attr('x', mid.x - bbox.width / 2 - 4)
-        .attr('y', mid.y - bbox.height / 2 - 2)
-        .attr('width', bbox.width + 8)
-        .attr('height', bbox.height + 4)
- .attr('transform', '') // 
-    })
+    return d
+  }
 
-    node
-      .attr('cx', d => d.x)
-      .attr('cy', d => d.y)
+  // Slow on hover
+  svg.on('mouseenter', () => { rotSpeed = 0.001 })
+     .on('mouseleave', () => { rotSpeed = 0.004 })
 
-    nodeLabels
-      .attr('x', d => d.x)
-      .attr('y', d => d.y)
-  })
-  
- // 
+  // SVG background click → deselect
   svg.on('click', () => {
     selectedItem.value = null
-    node.attr('stroke', '#0a0a0a').attr('stroke-width', 1.5)
-    linkGroup.selectAll('path').attr('stroke', '#C0C0C0').attr('stroke-width', 1.5)
-    linkLabelBg.attr('fill', 'rgba(20,25,40,0.92)')
-    linkLabels.attr('fill', 'rgba(255,255,255,0.45)')
+    node.attr('stroke', themeColors().nodeBg).attr('stroke-width', 1.5)
+    linkGroup.selectAll('path').attr('stroke', themeColors().link).attr('stroke-width', 1)
   })
+
+  // ── Animation loop ──
+  const animate = () => {
+    rotY += rotSpeed
+
+    // Grid
+    latPaths.forEach(p => p.attr('d', gridPath(p.datum())))
+    lonPaths.forEach(p => p.attr('d', gridPath(p.datum())))
+
+    // Project nodes
+    nodes.forEach(nd => {
+      const p = project(nd._sx, nd._sy, nd._sz)
+      nd._px = p.x; nd._py = p.y; nd._pz = p.z; nd._scale = p.scale
+      nd._r = Math.max(5, 9 * p.scale)
+      nd._opacity = p.z < -0.1 ? Math.max(0.12, 0.75 + p.z * 0.65) : 0.95
+    })
+
+    // Depth sort (painter's algorithm)
+    node.sort((a, b) => a._pz - b._pz)
+    nodeLabels.sort((a, b) => a._pz - b._pz)
+
+    node.attr('cx', d => d._px).attr('cy', d => d._py).attr('r', d => d._r).attr('opacity', d => d._opacity)
+    nodeLabels.attr('x', d => d._px).attr('y', d => d._py)
+      .attr('opacity', d => d._pz < -0.05 ? 0 : Math.min(0.9, 0.35 + d._pz * 0.65))
+      .attr('font-size', d => Math.max(9, 11 * d._scale) + 'px')
+
+    // Great-circle edge arcs (midpoint on sphere surface)
+    link.attr('d', d => {
+      const s = d.source, t = d.target
+      if (!s || !t) return ''
+      const mx = (s._sx + t._sx) / 2, my = (s._sy + t._sy) / 2, mz = (s._sz + t._sz) / 2
+      const ml = Math.sqrt(mx*mx + my*my + mz*mz) || 1
+      const mp = project(mx/ml, my/ml, mz/ml)
+      return `M${s._px.toFixed(1)},${s._py.toFixed(1)} Q${mp.x.toFixed(1)},${mp.y.toFixed(1)} ${t._px.toFixed(1)},${t._py.toFixed(1)}`
+    })
+    .attr('opacity', d => {
+      if (!d.source || !d.target) return 0
+      const z = (d.source._pz + d.target._pz) / 2
+      return z < -0.3 ? 0.03 : z < 0 ? 0.07 + (z + 0.3) * 0.33 : 0.2 + z * 0.15
+    })
+
+    animationRef = requestAnimationFrame(animate)
+  }
+
+  animate()
+}
+
+// ── STUB so old watch/tick refs compile ──
+const currentSimulation = null
+// fake tick references for any surviving code
+const _stubWatch = () => {
+  if (linkLabelsRef) { /* noop */ }
+  if (linkLabelBgRef) { /* noop */ }
 }
 
 watch(() => props.graphData, () => {
   nextTick(renderGraph)
 }, { deep: true })
 
-// 
-watch(showEdgeLabels, (newVal) => {
-  if (linkLabelsRef) {
-    linkLabelsRef.style('display', newVal ? 'block' : 'none')
-  }
-  if (linkLabelBgRef) {
-    linkLabelBgRef.style('display', newVal ? 'block' : 'none')
-  }
-})
 
 const handleResize = () => {
-  nextTick(renderGraph)
+  isMobile.value = window.innerWidth < 768
+  if (!isMobile.value) nextTick(renderGraph)
 }
 
 onMounted(() => {
+  isMobile.value = window.innerWidth < 768
   window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
-  if (currentSimulation) {
-    currentSimulation.stop()
-  }
+  if (animationRef) cancelAnimationFrame(animationRef)
 })
 </script>
 
@@ -874,10 +789,10 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 100%;
-  background: #030506;
+  background: var(--bg);
   background-image:
-    linear-gradient(rgba(59,130,246,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(59,130,246,0.04) 1px, transparent 1px);
+    linear-gradient(var(--green-dim) 1px, transparent 1px),
+    linear-gradient(90deg, var(--green-dim) 1px, transparent 1px);
   background-size: 32px 32px;
   overflow: hidden;
 }
@@ -888,25 +803,6 @@ onUnmounted(() => {
   height: 100%;
 }
 
-.graph-bg-video {
-  position: absolute;
-  inset: 0;
-  width: 140%;
-  height: 140%;
-  left: -20%;
-  top: -20%;
-  object-fit: cover;
-  opacity: 0.22;
-  transform: scale(1.03);
-  pointer-events: none;
-  transition: opacity 0.25s ease;
-  z-index: 1;
-}
-
-.graph-bg-video:hover {
-  opacity: 0.38;
-  transform: scale(1.05);
-}
 
 .graph-view {
   position: relative;
@@ -932,7 +828,7 @@ onUnmounted(() => {
   color: rgba(255,255,255,0.45);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--mono);
   pointer-events: auto;
 }
 
@@ -964,7 +860,7 @@ onUnmounted(() => {
   border-color: rgba(59,130,246,0.3);
 }
 .tool-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-.tool-btn .btn-text { font-size: 11px; font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.05em; }
+.tool-btn .btn-text { font-size: 11px; font-family: var(--mono); letter-spacing: 0.05em; }
 
 .icon-refresh.spinning { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -1001,7 +897,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 10px;
   font-size: 11px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--mono);
   color: #60a5fa;
   letter-spacing: 0.06em;
   backdrop-filter: blur(12px);
@@ -1066,7 +962,7 @@ onUnmounted(() => {
 
 .detail-title {
   font-size: 10px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--mono);
   font-weight: 600;
   color: rgba(255,255,255,0.45);
   letter-spacing: 0.1em;
@@ -1075,7 +971,7 @@ onUnmounted(() => {
 
 .detail-type-badge {
   font-size: 9px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--mono);
   font-weight: 700;
   padding: 2px 7px;
   border-radius: 3px;
@@ -1098,7 +994,7 @@ onUnmounted(() => {
 }
 .detail-label {
   font-size: 9px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--mono);
   color: rgba(255,255,255,0.3);
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1110,7 +1006,7 @@ onUnmounted(() => {
   line-height: 1.4;
 }
 .detail-value.mono {
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--mono);
   font-size: 10px;
   color: #60a5fa;
 }
@@ -1118,7 +1014,7 @@ onUnmounted(() => {
 .detail-section { margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.07); }
 .detail-section-title {
   font-size: 9px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--mono);
   color: rgba(255,255,255,0.3);
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -1128,7 +1024,7 @@ onUnmounted(() => {
 .labels-list { display: flex; flex-wrap: wrap; gap: 4px; }
 .label-tag {
   font-size: 9px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--mono);
   padding: 2px 7px;
   border-radius: 3px;
   background: rgba(59,130,246,0.15);
@@ -1146,16 +1042,16 @@ onUnmounted(() => {
 }
 .self-loop-header { flex-direction: column; align-items: flex-start; }
 .edge-node-name {
-  font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+  font-family: var(--mono); font-size: 10px;
   color: #60a5fa; font-weight: 600;
 }
 .edge-arrow { color: rgba(255,255,255,0.25); font-size: 10px; }
 .edge-label {
-  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  font-family: var(--mono); font-size: 9px;
   color: rgba(255,255,255,0.4); letter-spacing: 0.08em;
 }
 .edge-count-badge {
-  font-size: 9px; font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px; font-family: var(--mono);
   background: rgba(59,130,246,0.15); color: #60a5fa;
   border: 1px solid rgba(59,130,246,0.2);
   padding: 2px 7px; border-radius: 3px;
@@ -1171,7 +1067,7 @@ onUnmounted(() => {
   background: rgba(255,255,255,0.02);
 }
 .self-loop-edge-label {
-  font-family: 'IBM Plex Mono', monospace; font-size: 9px;
+  font-family: var(--mono); font-size: 9px;
   color: rgba(255,255,255,0.3); letter-spacing: 0.08em; margin-bottom: 4px;
 }
 .self-loop-edge-fact {
@@ -1184,7 +1080,7 @@ onUnmounted(() => {
   align-items: center; justify-content: center;
   height: 100%; gap: 12px;
   color: rgba(255,255,255,0.25);
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--mono);
 }
 .graph-state svg { opacity: 0.2; }
 .graph-state p { font-size: 11px; letter-spacing: 0.08em; }
@@ -1239,43 +1135,6 @@ onUnmounted(() => {
   letter-spacing: 0.04em;
 }
 
-/* ── EDGE LABEL TOGGLE ── */
-/* ── EDGE LABEL TOGGLE ── */
-.edge-labels-toggle {
-  position: absolute;
-  top: 14px; left: 50%; transform: translateX(-50%);
-  display: flex; align-items: center; gap: 8px;
-  background: #000000;
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 20px;
-  padding: 6px 14px;
-  backdrop-filter: blur(12px);
-  z-index: 15;
-}
-.toggle-label {
-  font-size: 10px;
-  font-family: Arial, sans-serif;
-  color: #BDEBB5;
-  letter-spacing: 0.08em;
-  white-space: nowrap;
-}
-.toggle-switch { position: relative; width: 32px; height: 18px; }
-.toggle-switch input { opacity: 0; width: 0; height: 0; }
-.slider {
-  position: absolute; cursor: pointer;
-  inset: 0; background: rgba(189,235,181,0.2);
-  border-radius: 18px; transition: 0.2s;
-}
-.slider:before {
-  content: '';
-  position: absolute;
-  height: 12px; width: 12px;
-  left: 3px; bottom: 3px;
-  background: rgba(255,255,255,0.85);
-  border-radius: 50%; transition: 0.2s;
-}
-input:checked + .slider { background: rgba(189,235,181,0.5); }
-input:checked + .slider:before { background: #BDEBB5; transform: translateX(14px); }
 
 /* ── SIMULATION CONTROLS ── */
 .simulation-controls {
@@ -1310,6 +1169,58 @@ input:checked + .slider:before { background: #BDEBB5; transform: translateX(14px
   border-color: rgba(59,130,246,0.5);
 }
 
+/* ── MOBILE NODE LIST ── */
+.mobile-graph-list {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  background: inherit;
+}
+.mgl-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 16px 8px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  flex-shrink: 0;
+}
+.mgl-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: rgba(255,255,255,0.45);
+  font-family: var(--mono);
+}
+.mgl-count { font-size: 9px; color: rgba(255,255,255,0.2); font-family: var(--mono); }
+.mgl-search {
+  margin: 8px 12px; padding: 7px 12px;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 5px; color: rgba(255,255,255,0.8); font-size: 12px;
+  font-family: var(--mono); outline: none; flex-shrink: 0;
+}
+.mgl-search:focus { border-color: rgba(59,130,246,0.4); }
+.mgl-search::placeholder { color: rgba(255,255,255,0.2); }
+.mgl-nodes {
+  flex: 1; overflow-y: auto; padding: 4px 12px 12px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.mgl-node {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 12px; border-radius: 5px;
+  background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer; transition: all 0.15s;
+}
+.mgl-node:hover { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.12); }
+.mgl-node.selected { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.3); }
+.mgl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.mgl-name { flex: 1; font-size: 12px; color: rgba(255,255,255,0.8); truncate: true; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mgl-type { font-size: 9px; color: rgba(255,255,255,0.3); letter-spacing: 0.06em; font-family: var(--mono); flex-shrink: 0; }
+.mgl-detail {
+  flex-shrink: 0; border-top: 1px solid rgba(255,255,255,0.07);
+  max-height: 220px; overflow-y: auto;
+  background: rgba(8,12,20,0.98);
+  border-radius: 0;
+}
+.mgl-nodes::-webkit-scrollbar { width: 3px; }
+.mgl-nodes::-webkit-scrollbar-track { background: transparent; }
+.mgl-nodes::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
 /* Scrollbar in detail panel */
 .node-detail::-webkit-scrollbar { width: 3px; }
 .node-detail::-webkit-scrollbar-track { background: transparent; }
@@ -1328,7 +1239,7 @@ input:checked + .slider:before { background: #BDEBB5; transform: translateX(14px
   box-shadow: 0 4px 16px rgba(0,0,0,0.3);
   max-width: 200px;
   font-size: 11px;
-  font-family: 'IBM Plex Mono', monospace;
+  font-family: var(--mono);
 }
 .tooltip-title {
   color: #BDEBB5;
@@ -1339,5 +1250,35 @@ input:checked + .slider:before { background: #BDEBB5; transform: translateX(14px
 .tooltip-content {
   color: rgba(255,255,255,0.8);
   line-height: 1.3;
+}
+
+/* Agent Profile Card */
+.agent-profile-card {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 6px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.ap-row { display: flex; align-items: center; justify-content: space-between; }
+.ap-label { font-size: 9px; color: rgba(255,255,255,0.25); text-transform: uppercase; letter-spacing: 0.1em; }
+.ap-value { font-size: 10px; color: rgba(255,255,255,0.65); font-weight: 500; }
+.ap-tier { font-weight: 700; font-size: 9px; padding: 1px 6px; border-radius: 3px; letter-spacing: 0.08em; text-transform: uppercase; }
+.tier-low { background: rgba(239,68,68,0.12); color: #ef4444; border: 1px solid rgba(239,68,68,0.2); }
+.tier-medium { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.1); }
+.tier-high { background: rgba(189,235,181,0.1); color: #BDEBB5; border: 1px solid rgba(189,235,181,0.2); }
+.tier-very_high { background: rgba(245,158,11,0.1); color: #f59e0b; border: 1px solid rgba(245,158,11,0.2); }
+.ap-emotions { display: flex; flex-direction: column; gap: 5px; }
+.ap-emo-label { font-size: 8px; color: rgba(255,255,255,0.2); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 2px; }
+.ap-emo-row { display: flex; align-items: center; gap: 6px; }
+.ap-emo-key { font-size: 9px; color: rgba(255,255,255,0.3); min-width: 70px; text-transform: capitalize; }
+.ap-emo-bar-track { flex: 1; height: 3px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+.ap-emo-bar { height: 100%; border-radius: 2px; transition: width 0.4s ease; }
+.ap-emo-val { font-size: 9px; color: rgba(255,255,255,0.3); min-width: 22px; text-align: right; }
+.ap-biases { display: flex; flex-direction: column; gap: 5px; }
+.ap-bias-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.ap-bias-tag {
+  font-size: 8px; padding: 2px 6px; border-radius: 3px;
+  background: rgba(245,158,11,0.08); color: rgba(245,158,11,0.65);
+  border: 1px solid rgba(245,158,11,0.15); text-transform: capitalize;
 }
 </style>

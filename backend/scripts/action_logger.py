@@ -116,6 +116,131 @@ class PlatformActionLogger:
             f.write(json.dumps(entry, ensure_ascii=False) + '\n')
 
 
+class CascadeTracker:
+    """
+    Tracks information cascades during simulation.
+
+    A cascade occurs when content spreads through repost/quote/like chains.
+    Tracks depth (how many hops from origin) and spread (unique agents reached).
+    Writes cascade events to cascades.jsonl for post-simulation analysis.
+    """
+
+    def __init__(self, base_dir: str):
+        self.base_dir = base_dir
+        self.cascade_path = os.path.join(base_dir, "cascades.jsonl")
+        # post_id -> {origin_agent, origin_round, platform, interactions, depth, spreaders}
+        self._post_graph: Dict[str, Any] = {}
+        # agent_id -> list of post_ids they created
+        self._agent_posts: Dict[int, list] = {}
+
+    def record_post(self, post_id: str, agent_id: int, agent_name: str,
+                    round_num: int, platform: str, content: str = ""):
+        """Register a new post as a potential cascade origin."""
+        self._post_graph[post_id] = {
+            "origin_agent_id": agent_id,
+            "origin_agent_name": agent_name,
+            "origin_round": round_num,
+            "platform": platform,
+            "content_preview": content[:120] if content else "",
+            "interactions": [],
+            "depth": 0,
+            "spreaders": {agent_id},
+        }
+        self._agent_posts.setdefault(agent_id, []).append(post_id)
+
+    def record_interaction(self, original_post_id: str, actor_agent_id: int,
+                           actor_agent_name: str, interaction_type: str,
+                           round_num: int, new_post_id: str = None):
+        """
+        Record that an agent interacted with a post (REPOST, QUOTE_POST, LIKE_POST).
+        interaction_type: 'repost' | 'quote' | 'like'
+        """
+        if original_post_id not in self._post_graph:
+            return
+
+        node = self._post_graph[original_post_id]
+        node["spreaders"].add(actor_agent_id)
+        node["interactions"].append({
+            "agent_id": actor_agent_id,
+            "agent_name": actor_agent_name,
+            "type": interaction_type,
+            "round_num": round_num,
+        })
+
+        # If a new post was created (repost/quote), track it as a child
+        if new_post_id and interaction_type in ("repost", "quote"):
+            self._post_graph[new_post_id] = {
+                "origin_agent_id": actor_agent_id,
+                "origin_agent_name": actor_agent_name,
+                "origin_round": round_num,
+                "platform": node["platform"],
+                "content_preview": f"[{interaction_type} of {original_post_id[:8]}]",
+                "interactions": [],
+                "depth": node["depth"] + 1,
+                "spreaders": {actor_agent_id},
+                "parent_post_id": original_post_id,
+            }
+            # Propagate depth upward to the root
+            if node["depth"] + 1 > node.get("max_depth", 0):
+                node["max_depth"] = node["depth"] + 1
+
+        # Emit cascade event if threshold reached (3+ unique spreaders)
+        spread = len(node["spreaders"])
+        if spread in (3, 5, 10, 20, 50) or (spread > 50 and spread % 50 == 0):
+            self._emit_cascade_event(original_post_id, node, spread)
+
+    def _emit_cascade_event(self, post_id: str, node: Dict, spread: int):
+        """Write a cascade milestone event to cascades.jsonl."""
+        event = {
+            "timestamp": datetime.now().isoformat(),
+            "event_type": "cascade_milestone",
+            "post_id": post_id,
+            "origin_agent": node["origin_agent_name"],
+            "platform": node["platform"],
+            "content_preview": node["content_preview"],
+            "spread": spread,
+            "depth": node.get("max_depth", node["depth"]),
+            "origin_round": node["origin_round"],
+            "interaction_count": len(node["interactions"]),
+        }
+        with open(self.cascade_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(event, ensure_ascii=False) + "\n")
+
+    def get_top_cascades(self, top_n: int = 10) -> list:
+        """Return top N posts by spread count."""
+        ranked = sorted(
+            self._post_graph.items(),
+            key=lambda x: len(x[1]["spreaders"]),
+            reverse=True
+        )[:top_n]
+        return [
+            {
+                "post_id": pid,
+                "origin_agent": node["origin_agent_name"],
+                "platform": node["platform"],
+                "content_preview": node["content_preview"],
+                "spread": len(node["spreaders"]),
+                "depth": node.get("max_depth", node["depth"]),
+                "origin_round": node["origin_round"],
+                "interaction_count": len(node["interactions"]),
+            }
+            for pid, node in ranked
+            if len(node["spreaders"]) > 1
+        ]
+
+    def write_final_report(self):
+        """Write a summary of all cascades at simulation end."""
+        top = self.get_top_cascades(20)
+        report = {
+            "timestamp": datetime.now().isoformat(),
+            "event_type": "cascade_final_report",
+            "total_posts_tracked": len(self._post_graph),
+            "top_cascades": top,
+        }
+        with open(self.cascade_path, "a", encoding="utf-8") as f:
+            f.write(json.dumps(report, ensure_ascii=False) + "\n")
+
+
 class SimulationLogManager:
     """
     模拟日志管理器

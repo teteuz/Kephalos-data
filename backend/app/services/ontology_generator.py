@@ -214,29 +214,38 @@ class OntologyGenerator:
         simulation_requirement: str,
         additional_context: Optional[str]
     ) -> str:
-        """构建用户消息"""
+        """Constrói a mensagem do usuário"""
         
-        # 合并文本
-        combined_text = "\n\n---\n\n".join(document_texts)
-        original_length = len(combined_text)
-        
-        # 如果文本超过5万字，截断（仅影响传给LLM的内容，不影响图谱构建）
-        if len(combined_text) > self.MAX_TEXT_LENGTH_FOR_LLM:
-            combined_text = combined_text[:self.MAX_TEXT_LENGTH_FOR_LLM]
-            combined_text += f"\n\n...(原文共{original_length}字，已截取前{self.MAX_TEXT_LENGTH_FOR_LLM}字用于本体分析)..."
-        
-        message = f"""## 模拟需求
+        if document_texts:
+            # Combinar textos dos documentos
+            combined_text = "\n\n---\n\n".join(document_texts)
+            original_length = len(combined_text)
+            
+            if len(combined_text) > self.MAX_TEXT_LENGTH_FOR_LLM:
+                combined_text = combined_text[:self.MAX_TEXT_LENGTH_FOR_LLM]
+                combined_text += f"\n\n...(texto original com {original_length} chars, truncado para análise)..."
+            
+            message = f"""## Diretiva de Simulação
 
 {simulation_requirement}
 
-## 文档内容
+## Conteúdo dos Documentos
 
 {combined_text}
+"""
+        else:
+            # Sem documentos — gerar ontologia apenas a partir da diretiva
+            message = f"""## Diretiva de Simulação
+
+{simulation_requirement}
+
+## Nota
+Nenhum documento foi fornecido. Crie uma ontologia rica e relevante baseada exclusivamente na diretiva de simulação acima, inferindo os tipos de entidades e relações mais adequados para o cenário descrito.
 """
         
         if additional_context:
             message += f"""
-## 额外说明
+## Contexto Adicional
 
 {additional_context}
 """

@@ -1,0 +1,416 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Roboto+Mono:wght@300;400;500;700&display=swap');
+
+/* ─────────────────────────────────────────────
+   LIGHT MODE  (default)
+───────────────────────────────────────────── */
+:root {
+  /* Backgrounds */
+  --bg:  #f4f4f6;
+  --bg2: #ffffff;
+  --bg3: #ebebed;
+  --bg4: #e2e2e4;
+
+  /* Borders */
+  --border:  rgba(0,0,0,0.07);
+  --border2: rgba(0,0,0,0.13);
+
+  /* Text */
+  --text:  #090909;
+  --text2: rgba(0,0,0,0.50);
+  --text3: rgba(0,0,0,0.30);
+
+  /* Accent – green */
+  --green:        #3ecf59;        /* readable on white: darker shade */
+  --green-bright: #76FB91;        /* button backgrounds */
+  --green-text:   #0d7a23;        /* green text on light bg */
+  --green-dim:    rgba(118,251,145,0.13);
+  --green-border: rgba(118,251,145,0.45);
+
+  /* Danger */
+  --red: #dc2626;
+
+  /* Surfaces (opacity-based, light mode = black-on-white) */
+  --surface-1:   rgba(0,0,0,0.025);
+  --surface-2:   rgba(0,0,0,0.04);
+  --surface-3:   rgba(0,0,0,0.06);
+  --surface-h:   rgba(0,0,0,0.03);   /* hover */
+
+  /* Nav bar */
+  --nav-bg: rgba(244,244,246,0.92);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 2px 8px rgba(0,0,0,0.05);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.10), 0 8px 32px rgba(0,0,0,0.06);
+
+  /* Fonts */
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", 'Outfit', "Helvetica Neue", Arial, sans-serif;
+  --mono: 'Roboto Mono', 'JetBrains Mono', monospace;
+
+  /* Radius scale */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+
+  /* Animation */
+  --dur-fast: 0.12s;
+  --dur-base: 0.18s;
+  --dur-slow: 0.28s;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─────────────────────────────────────────────
+   DARK MODE
+───────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:  #06060a;
+  --bg2: #0f0f14;
+  --bg3: #141418;
+  --bg4: #1c1c22;
+
+  --border:  rgba(255,255,255,0.06);
+  --border2: rgba(255,255,255,0.12);
+
+  --text:  #ffffff;
+  --text2: rgba(255,255,255,0.45);
+  --text3: rgba(255,255,255,0.22);
+
+  --green:        #BDEBB5;
+  --green-bright: #BDEBB5;
+  --green-text:   #BDEBB5;
+  --green-dim:    rgba(189,235,181,0.07);
+  --green-border: rgba(189,235,181,0.20);
+
+  --red: #ef4444;
+
+  --surface-1: rgba(255,255,255,0.02);
+  --surface-2: rgba(255,255,255,0.035);
+  --surface-3: rgba(255,255,255,0.055);
+  --surface-h: rgba(255,255,255,0.04);
+
+  --nav-bg: rgba(6,6,10,0.92);
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.40);
+  --shadow-md: 0 4px 16px rgba(0,0,0,0.50), 0 8px 32px rgba(0,0,0,0.35);
+
+  --font: 'Roboto Mono', 'JetBrains Mono', monospace;
+  --mono: 'Roboto Mono', 'JetBrains Mono', monospace;
+
+  /* Radius scale */
+  --radius-sm:  4px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+
+  /* Animation */
+  --dur-fast: 0.12s;
+  --dur-base: 0.18s;
+  --dur-slow: 0.28s;
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ─────────────────────────────────────────────
+   GLOBAL RESETS
+───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  margin: 0;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.01em;
+}
+
+/* Smooth theme transitions on key properties only */
+body, .k, .sp, .dash-page, .auth-page, .pricing-page, .mv, .main-view {
+  transition: background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease;
+}
+
+/* ─────────────────────────────────────────────
+   LIGHT MODE OVERRIDES for dark-first components
+───────────────────────────────────────────── */
+:root:not([data-theme="dark"]) {
+
+  /* ── GraphPanel ── */
+  .graph-panel {
+    background: var(--bg3) !important;
+    background-image:
+      linear-gradient(rgba(62,207,89,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(62,207,89,0.06) 1px, transparent 1px) !important;
+  }
+  .panel-header { background: linear-gradient(to bottom, var(--bg3) 60%, transparent) !important; }
+  .panel-title { color: var(--text2) !important; }
+  .tool-btn {
+    border-color: var(--border2) !important;
+    background: var(--bg2) !important;
+    color: var(--text2) !important;
+  }
+  .tool-btn:hover {
+    background: var(--surface-2) !important;
+    color: var(--text) !important;
+    border-color: var(--border2) !important;
+  }
+  .graph-building-hint {
+    background: var(--bg2) !important;
+    border-color: rgba(59,130,246,0.3) !important;
+    color: #3b82f6 !important;
+  }
+  .finished-hint {
+    color: var(--green-text) !important;
+    border-color: var(--green-border) !important;
+  }
+  .node-detail {
+    background: var(--bg2) !important;
+    border-color: var(--border2) !important;
+    box-shadow: var(--shadow-md) !important;
+  }
+  .detail-header {
+    background: var(--surface-2) !important;
+    border-color: var(--border) !important;
+  }
+  .detail-title { color: var(--text2) !important; }
+  .close-btn { color: var(--text2) !important; }
+  .detail-section { border-color: var(--border) !important; }
+  .detail-section-label { color: var(--text3) !important; }
+  .detail-attr-label { color: var(--text3) !important; }
+  .detail-attr-value { color: var(--text) !important; }
+  .graph-legend {
+    background: var(--bg2) !important;
+    border-color: var(--border2) !important;
+  }
+  .legend-title { color: var(--text3) !important; }
+  .legend-label { color: var(--text2) !important; }
+  .agent-profile-card {
+    background: var(--bg2) !important;
+    border-color: var(--border2) !important;
+  }
+  .profile-name { color: var(--text) !important; }
+  .profile-platform { color: var(--text2) !important; }
+  .profile-section-title { color: var(--text3) !important; }
+  .emotion-label, .bias-label { color: var(--text2) !important; }
+  .emotion-track, .bias-track {
+    background: var(--surface-2) !important;
+  }
+
+  /* ── Step1GraphBuild ── */
+  .wb {
+    background: var(--bg) !important;
+    font-family: var(--font) !important;
+  }
+  .wb-scroll::-webkit-scrollbar-thumb { background: var(--border2) !important; }
+  .wb-phase {
+    border-color: var(--border) !important;
+    background: var(--bg2) !important;
+  }
+  .wb-phase.active {
+    border-color: var(--border2) !important;
+    background: var(--bg3) !important;
+  }
+  .wb-phase.done {
+    border-color: var(--green-border) !important;
+    background: var(--green-dim) !important;
+  }
+  .wb-phase-ring { border-color: var(--border2) !important; }
+  .wb-phase-ring.spinning { border-color: transparent !important; border-top-color: var(--text2) !important; }
+  .wb-phase-ring.complete { border-color: var(--green-border) !important; background: var(--green-dim) !important; }
+  .wb-phase-dot { background: var(--text3) !important; }
+  .wb-phase-num { color: var(--text3) !important; }
+  .wb-phase.active .wb-phase-num { color: var(--green-text) !important; }
+  .wb-phase.done .wb-phase-num { color: var(--green-text) !important; opacity: 0.7; }
+  .wb-phase-title { color: var(--text3) !important; }
+  .wb-phase.active .wb-phase-title { color: var(--text) !important; }
+  .wb-phase.done .wb-phase-title { color: var(--text2) !important; }
+  .wb-pill--idle { background: var(--surface-1) !important; color: var(--text3) !important; border-color: var(--border) !important; }
+  .wb-pill--live { background: var(--surface-2) !important; color: var(--text2) !important; border-color: var(--border2) !important; }
+  .wb-pill--done { background: var(--green-dim) !important; color: var(--green-text) !important; border-color: var(--green-border) !important; }
+  .wb-pill--ready { background: var(--green-dim) !important; color: var(--green-text) !important; border-color: var(--green-border) !important; }
+  .wb-phase-body { border-color: var(--border) !important; background: transparent !important; }
+  .wb-status-bar { background: var(--surface-2) !important; border-color: var(--border) !important; }
+  .wb-status-txt { color: var(--text2) !important; }
+  .wb-status-detail { color: var(--text3) !important; }
+  .wb-progress-track { background: var(--surface-2) !important; }
+  .wb-progress-fill { background: var(--green) !important; }
+  .wb-tag--entity { background: rgba(59,130,246,0.1) !important; border-color: rgba(59,130,246,0.25) !important; color: #2563eb !important; }
+  .wb-tag--relation { background: rgba(168,85,247,0.1) !important; border-color: rgba(168,85,247,0.25) !important; color: #7c3aed !important; }
+  .wb-detail { background: var(--bg3) !important; border-color: var(--border) !important; }
+  .wb-detail-label { color: var(--text3) !important; }
+  .wb-detail-val { color: var(--text) !important; }
+  .wb-metric-label { color: var(--text2) !important; }
+  .wb-metric-val { color: var(--text) !important; }
+  .wb-ready-banner { background: var(--green-dim) !important; border-color: var(--green-border) !important; }
+  .wb-ready-title { color: var(--green-text) !important; }
+  .wb-ready-sub { color: var(--text2) !important; }
+  .wb-action-bar { background: var(--bg2) !important; border-color: var(--border) !important; }
+  .wb-action {
+    background: var(--green-bright) !important;
+    color: #000 !important;
+    border-color: transparent !important;
+  }
+  .wb-log-line { color: var(--text2) !important; }
+  .wb-log-time { color: var(--text3) !important; }
+
+  /* ── Step3Simulation ── */
+  .simulation-panel {
+    background: var(--bg) !important;
+    font-family: var(--font) !important;
+  }
+  .control-bar {
+    background: var(--bg2) !important;
+    border-color: var(--border) !important;
+  }
+  .platform-status {
+    background: var(--surface-1) !important;
+    border-color: var(--border) !important;
+    box-shadow: var(--shadow-sm) !important;
+  }
+  .platform-status.active {
+    border-color: var(--border2) !important;
+    background: var(--surface-2) !important;
+  }
+  .platform-status.completed {
+    border-color: var(--green-border) !important;
+    background: var(--green-dim) !important;
+  }
+  .platform-name { color: var(--text) !important; }
+  .platform-round { color: var(--text2) !important; }
+  .actions-tooltip {
+    background: var(--bg2) !important;
+    border-color: var(--border2) !important;
+    box-shadow: var(--shadow-md) !important;
+  }
+  .tooltip-title { color: var(--text3) !important; }
+  .tooltip-action { background: var(--surface-2) !important; color: var(--text2) !important; border-color: var(--border) !important; }
+  .main-content-area { background: var(--bg) !important; }
+  .timeline-card {
+    background: var(--bg2) !important;
+    border-color: var(--border) !important;
+    box-shadow: var(--shadow-sm) !important;
+  }
+  .timeline-card:hover { border-color: var(--border2) !important; }
+  .agent-name { color: var(--text) !important; }
+  .agent-handle { color: var(--text3) !important; }
+  .content-text { color: var(--text) !important; }
+  .card-footer { border-color: var(--border) !important; }
+  .timestamp { color: var(--text3) !important; }
+  .reaction-count { color: var(--text3) !important; }
+  .system-logs {
+    background: var(--bg2) !important;
+    border-color: var(--border) !important;
+  }
+  .log-header { background: var(--surface-2) !important; border-color: var(--border) !important; color: var(--text2) !important; }
+  .log-line { color: var(--text2) !important; }
+  .log-time { color: var(--text3) !important; }
+  .action-btn {
+    background: var(--surface-2) !important;
+    border-color: var(--border) !important;
+    color: var(--text2) !important;
+  }
+  .action-btn:hover { background: var(--surface-3) !important; color: var(--text) !important; }
+  .round-filter { color: var(--text2) !important; }
+  .filter-label { color: var(--text3) !important; }
+  .inject-wrap { background: var(--surface-1) !important; border-color: var(--border) !important; }
+  .inject-input {
+    background: transparent !important;
+    color: var(--text) !important;
+  }
+  .inject-input::placeholder { color: var(--text3) !important; }
+  .cascade-toast {
+    background: var(--bg2) !important;
+    border-color: var(--border2) !important;
+    color: var(--text) !important;
+    box-shadow: var(--shadow-md) !important;
+  }
+  .axis-line { background: var(--border) !important; }
+  .chat-avatar.twitter {
+    background: var(--surface-2) !important;
+    color: var(--text2) !important;
+    border-color: var(--border2) !important;
+  }
+  .chat-avatar.reddit {
+    background: var(--green-dim) !important;
+    color: var(--green-text) !important;
+    border-color: var(--green-border) !important;
+  }
+  .chat-bubble {
+    background: var(--bg2) !important;
+    border-color: var(--border) !important;
+  }
+  .chat-msg.reddit .chat-bubble {
+    background: var(--green-dim) !important;
+    border-color: var(--green-border) !important;
+  }
+  .chat-agent-name { color: var(--text) !important; }
+  .chat-msg.reddit .chat-agent-name { color: var(--green-text) !important; }
+  .chat-time { color: var(--text3) !important; }
+  .chat-bubble-body { color: var(--text) !important; }
+  .chat-input-bar {
+    background: var(--bg2) !important;
+    border-color: var(--border) !important;
+  }
+  .chat-input {
+    background: var(--bg3) !important;
+    border-color: var(--border2) !important;
+    color: var(--text) !important;
+  }
+  .chat-input::placeholder { color: var(--text3) !important; }
+  .chat-send-btn { background: var(--green) !important; }
+
+  /* ── Step2EnvSetup ── */
+  .env-setup-panel, .env-panel, .step2-panel {
+    background: var(--bg) !important;
+    font-family: var(--font) !important;
+  }
+  .env-section { background: var(--bg2) !important; border-color: var(--border) !important; }
+  .env-label { color: var(--text2) !important; }
+  .env-input, .env-select, .env-textarea {
+    background: var(--bg3) !important;
+    border-color: var(--border2) !important;
+    color: var(--text) !important;
+  }
+  .env-input::placeholder, .env-textarea::placeholder { color: var(--text3) !important; }
+  .step-card {
+    background: var(--bg2) !important;
+    border-color: var(--border) !important;
+  }
+  .step-card.active { border-color: var(--border2) !important; }
+  .step-num { color: var(--text3) !important; }
+  .step-card.active .step-num, .step-card.completed .step-num { color: var(--text) !important; }
+  .step-title { color: var(--text2) !important; }
+  .step-card.active .step-title { color: var(--text) !important; }
+  .badge.success { background: var(--green-dim) !important; color: var(--green-text) !important; border-color: var(--green-border) !important; }
+  .badge.processing { background: var(--surface-2) !important; color: var(--text2) !important; border-color: var(--border2) !important; }
+  .badge.pending { background: transparent !important; color: var(--text3) !important; border-color: var(--border) !important; }
+  .api-note { color: var(--text3) !important; }
+  .description { color: var(--text2) !important; }
+  .action-btn.primary { background: var(--green-bright) !important; color: #000 !important; }
+  .action-btn.secondary {
+    background: var(--surface-2) !important;
+    color: var(--text2) !important;
+    border-color: var(--border2) !important;
+  }
+  .action-btn.secondary:hover:not(:disabled) { background: var(--surface-3) !important; color: var(--text) !important; }
+
+  /* ── GraphPanel tooltip & agent card ── */
+  .graph-tooltip {
+    background: var(--bg2) !important;
+    border-color: var(--green-border) !important;
+    box-shadow: var(--shadow-md) !important;
+  }
+  .tooltip-title { color: var(--green-text) !important; }
+  .tooltip-content { color: var(--text) !important; }
+  .agent-profile-card {
+    background: var(--surface-1) !important;
+    border-color: var(--border) !important;
+  }
+  .ap-label { color: var(--text3) !important; }
+  .ap-value { color: var(--text) !important; }
+  .tier-medium {
+    background: var(--surface-2) !important;
+    color: var(--text2) !important;
+    border-color: var(--border2) !important;
+  }
+}

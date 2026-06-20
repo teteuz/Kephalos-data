@@ -26,7 +26,7 @@
           <div class="plan-badge plan-badge-green">PRO</div>
           <div class="plan-price"><span class="plan-amount">R$34,99</span>/mês</div>
           <div class="plan-desc">Acesso completo para indivíduos e pequenas equipes.</div>
-          <ul class="plan-features">
+          <ul class="plan-features plan-features-pro">
             <li>Simulações ilimitadas</li>
             <li>Agentes ilimitados</li>
             <li>Suíte completa de relatórios</li>
@@ -106,10 +106,15 @@ async function handleSubscribe(priceId) {
 .plan-features { list-style: none; display: flex; flex-direction: column; gap: 8px; flex: 1; margin-top: 4px; }
 .plan-features li { font-size: 12px; color: var(--text2); padding-left: 14px; position: relative; }
 .plan-features li::before { content: '—'; position: absolute; left: 0; color: var(--text3); }
-.plan-btn { display: block; text-align: center; border-radius: 4px; padding: 10px; font-size: 13px; font-family: var(--font); cursor: pointer; text-decoration: none; transition: opacity 0.2s; border: none; }
+.plan-features-pro li { color: var(--text); }
+.plan-features-pro li::before { content: '✓'; color: var(--green); font-weight: 600; }
+.plan-btn { display: block; text-align: center; border-radius: 6px; padding: 10px; font-size: 13px; font-family: var(--font); cursor: pointer; text-decoration: none; transition: all var(--dur-base, 0.18s) var(--ease, ease); border: none; }
 .plan-btn-outline { background: transparent; border: 1px solid var(--border2); color: var(--text2); }
-.plan-btn-outline:hover { border-color: var(--green); color: var(--green); }
+.plan-btn-outline:hover { border-color: var(--green); color: var(--green); transform: translateY(-1px); }
+.plan-btn-outline:active { transform: translateY(0); }
 .plan-btn-primary { background: var(--green); color: #000; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; }
+.plan-btn-primary:hover:not(:disabled) { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(189,235,181,0.25); }
+.plan-btn-primary:active:not(:disabled) { transform: translateY(0); box-shadow: none; }
 .plan-btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 .spinner { width: 13px; height: 13px; border: 2px solid rgba(0,0,0,0.3); border-top-color: #000; border-radius: 50%; animation: spin 0.7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }

@@ -153,10 +153,11 @@ onMounted(fetchSubscription)
   background: var(--bg3); border: 1px solid var(--border);
   border-radius: 10px; padding: 16px 20px;
   text-decoration: none; color: var(--text);
-  transition: border-color 0.18s, background 0.18s;
+  transition: border-color var(--dur-base, 0.18s), background var(--dur-base, 0.18s), transform var(--dur-base, 0.18s), box-shadow var(--dur-base, 0.18s);
   cursor: pointer;
 }
-.dash-card:hover { border-color: var(--border2); background: var(--bg2); }
+.dash-card:hover { border-color: var(--border2); background: var(--bg2); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+.dash-card:active { transform: translateY(0); box-shadow: none; }
 .dash-card-primary { border-color: var(--green-border, rgba(189,235,181,0.15)); }
 .dash-card-primary:hover { border-color: rgba(189,235,181,0.35); }
 .dash-card-icon {
@@ -236,10 +237,11 @@ onMounted(fetchSubscription)
   color: var(--text2); border-radius: 100px;
   padding: 10px 22px; font-size: 0.7rem; font-family: var(--font);
   font-weight: 600; letter-spacing: 0.03em;
-  text-decoration: none; transition: all 0.18s;
+  text-decoration: none; transition: all var(--dur-base, 0.18s) var(--ease, ease);
   box-shadow: 0 4px 20px rgba(0,0,0,0.3);
 }
-.dash-new-btn:hover { background: var(--green-dim); color: var(--green-text); border-color: var(--green-border); }
+.dash-new-btn:hover { background: var(--green-dim); color: var(--green-text); border-color: var(--green-border); transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,0,0,0.35); }
+.dash-new-btn:active { transform: translateY(0); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
 
 /* Transitions */
 @media (max-width: 640px) {

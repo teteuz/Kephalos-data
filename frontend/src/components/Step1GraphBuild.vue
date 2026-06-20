@@ -2,156 +2,222 @@
   <div class="wb">
     <div class="wb-scroll">
 
-      <!-- Step 01 -->
-      <div class="wb-step" :class="{ active: currentPhase === 0, done: currentPhase > 0 }">
-        <div class="wb-step-head">
-          <div class="wb-step-left">
-            <span class="wb-step-n">01</span>
-            <span class="wb-step-title">Ontology Generation</span>
+      <!-- Fase 01 -->
+      <div class="wb-phase" :class="{ active: currentPhase === 0, done: currentPhase > 0 }">
+        <div class="wb-phase-head">
+          <div class="wb-phase-left">
+            <div class="wb-phase-indicator">
+              <div class="wb-phase-ring" :class="{ spinning: currentPhase === 0, complete: currentPhase > 0 }">
+                <svg v-if="currentPhase > 0" viewBox="0 0 16 16" width="10" fill="none" stroke="#BDEBB5" stroke-width="2.5"><polyline points="3 8 6.5 11.5 13 4"/></svg>
+                <span v-else class="wb-phase-dot"></span>
+              </div>
+            </div>
+            <div class="wb-phase-meta">
+              <span class="wb-phase-num">FASE 01</span>
+              <span class="wb-phase-title">Geração de Ontologia</span>
+            </div>
           </div>
-          <span v-if="currentPhase > 0" class="wb-badge wb-badge--ok">COMPLETED</span>
-          <span v-else-if="currentPhase === 0" class="wb-badge wb-badge--run">GENERATING</span>
-          <span v-else class="wb-badge wb-badge--idle">PENDING</span>
+          <div class="wb-phase-status">
+            <span v-if="currentPhase > 0" class="wb-pill wb-pill--done">CONCLUÍDO</span>
+            <span v-else-if="currentPhase === 0" class="wb-pill wb-pill--live">
+              <span class="wb-live-dot"></span>PROCESSANDO
+            </span>
+            <span v-else class="wb-pill wb-pill--idle">AGUARDANDO</span>
+          </div>
         </div>
 
-        <div class="wb-step-body">
-          <span class="wb-endpoint">POST /api/graph/ontology/generate</span>
-          <p class="wb-desc">LLM analyzes documents and simulation requirements, extracts real-world seeds, and generates the proper ontology structure.</p>
-
-          <div v-if="currentPhase === 0 && ontologyProgress" class="wb-progress">
-            <span class="wb-spinner"></span>
-            <span>{{ ontologyProgress.message || 'Analyzing documents...' }}</span>
+        <div class="wb-phase-body">
+          <div v-if="currentPhase === 0 && ontologyProgress" class="wb-activity">
+            <div class="wb-activity-bar">
+              <div class="wb-activity-fill"></div>
+            </div>
+            <span class="wb-activity-msg">{{ ontologyProgress.message || 'Analisando documentos...' }}</span>
           </div>
 
-          <!-- Ontology detail overlay -->
-          <div v-if="selectedOntologyItem" class="wb-overlay">
-            <div class="wb-overlay-head">
-              <span class="wb-overlay-badge">{{ selectedOntologyItem.itemType === 'entity' ? 'ENTITY' : 'RELATION' }}</span>
-              <span class="wb-overlay-name">{{ selectedOntologyItem.name }}</span>
-              <button class="wb-overlay-close" @click="selectedOntologyItem = null">×</button>
+          <!-- Overlay de detalhe -->
+          <div v-if="selectedOntologyItem" class="wb-detail">
+            <div class="wb-detail-head">
+              <div class="wb-detail-type">
+                {{ selectedOntologyItem.itemType === 'entity' ? 'ENTIDADE' : 'RELAÇÃO' }}
+              </div>
+              <span class="wb-detail-name">{{ selectedOntologyItem.name }}</span>
+              <button class="wb-detail-close" @click="selectedOntologyItem = null">
+                <svg viewBox="0 0 16 16" width="12" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+              </button>
             </div>
-            <p class="wb-overlay-desc">{{ selectedOntologyItem.description }}</p>
-
-            <div v-if="selectedOntologyItem.attributes?.length" class="wb-overlay-section">
-              <span class="wb-overlay-label">ATTRIBUTES</span>
-              <div class="wb-attr-list">
-                <div v-for="a in selectedOntologyItem.attributes" :key="a.name" class="wb-attr">
+            <p class="wb-detail-desc">{{ selectedOntologyItem.description }}</p>
+            <div v-if="selectedOntologyItem.attributes?.length" class="wb-detail-section">
+              <span class="wb-detail-label">ATRIBUTOS</span>
+              <div class="wb-attr-grid">
+                <div v-for="a in selectedOntologyItem.attributes" :key="a.name" class="wb-attr-row">
                   <span class="wb-attr-name">{{ a.name }}</span>
                   <span class="wb-attr-type">{{ a.type }}</span>
                   <span class="wb-attr-desc">{{ a.description }}</span>
                 </div>
               </div>
             </div>
-            <div v-if="selectedOntologyItem.examples?.length" class="wb-overlay-section">
-              <span class="wb-overlay-label">EXAMPLES</span>
-              <div class="wb-ex-list">
-                <span v-for="ex in selectedOntologyItem.examples" :key="ex" class="wb-ex">{{ ex }}</span>
+            <div v-if="selectedOntologyItem.examples?.length" class="wb-detail-section">
+              <span class="wb-detail-label">EXEMPLOS</span>
+              <div class="wb-chips">
+                <span v-for="ex in selectedOntologyItem.examples" :key="ex" class="wb-chip">{{ ex }}</span>
               </div>
             </div>
-            <div v-if="selectedOntologyItem.source_targets?.length" class="wb-overlay-section">
-              <span class="wb-overlay-label">CONNECTIONS</span>
+            <div v-if="selectedOntologyItem.source_targets?.length" class="wb-detail-section">
+              <span class="wb-detail-label">CONEXÕES</span>
               <div class="wb-conn-list">
-                <div v-for="(c, i) in selectedOntologyItem.source_targets" :key="i" class="wb-conn">
-                  <span>{{ c.source }}</span><span class="wb-conn-arrow">→</span><span>{{ c.target }}</span>
+                <div v-for="(c, i) in selectedOntologyItem.source_targets" :key="i" class="wb-conn-row">
+                  <span class="wb-conn-node">{{ c.source }}</span>
+                  <div class="wb-conn-line">
+                    <div class="wb-conn-arrow-line"></div>
+                    <svg viewBox="0 0 8 8" width="6" fill="#BDEBB5"><polygon points="0,0 8,4 0,8"/></svg>
+                  </div>
+                  <span class="wb-conn-node">{{ c.target }}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Entity tags -->
-          <div v-if="projectData?.ontology?.entity_types" class="wb-tags" :class="{ dim: selectedOntologyItem }">
-            <span class="wb-tag-label">ENTITY TYPES</span>
-            <div class="wb-tag-list">
-              <span
-                v-for="e in projectData.ontology.entity_types" :key="e.name"
-                class="wb-tag wb-tag--entity"
-                @click="selectOntologyItem(e, 'entity')"
-              >{{ e.name }}</span>
+          <!-- Tags de ontologia -->
+          <div v-if="currentPhase > 0 && projectData?.ontology" class="wb-ontology">
+            <div class="wb-ontology-group">
+              <span class="wb-ontology-label">
+                <svg viewBox="0 0 12 12" width="9" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><circle cx="6" cy="6" r="4"/></svg>
+                ENTIDADES
+              </span>
+              <div class="wb-tag-row">
+                <button
+                  v-for="e in projectData.ontology.entity_types"
+                  :key="e.name"
+                  class="wb-tag wb-tag--entity"
+                  @click="selectOntologyItem(e, 'entity')"
+                >{{ e.name }}</button>
+              </div>
             </div>
-          </div>
-
-          <!-- Relation tags -->
-          <div v-if="projectData?.ontology?.edge_types" class="wb-tags" :class="{ dim: selectedOntologyItem }">
-            <span class="wb-tag-label">RELATION TYPES</span>
-            <div class="wb-tag-list">
-              <span
-                v-for="r in projectData.ontology.edge_types" :key="r.name"
-                class="wb-tag wb-tag--relation"
-                @click="selectOntologyItem(r, 'relation')"
-              >{{ r.name }}</span>
+            <div class="wb-ontology-group">
+              <span class="wb-ontology-label">
+                <svg viewBox="0 0 12 12" width="9" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"><line x1="2" y1="6" x2="10" y2="6"/><polyline points="7 3 10 6 7 9"/></svg>
+                RELAÇÕES
+              </span>
+              <div class="wb-tag-row">
+                <button
+                  v-for="r in projectData.ontology.relation_types"
+                  :key="r.name"
+                  class="wb-tag wb-tag--relation"
+                  @click="selectOntologyItem(r, 'relation')"
+                >{{ r.name }}</button>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Step 02 -->
-      <div class="wb-step" :class="{ active: currentPhase === 1, done: currentPhase > 1 }">
-        <div class="wb-step-head">
-          <div class="wb-step-left">
-            <span class="wb-step-n">02</span>
-            <span class="wb-step-title">GraphRAG Build</span>
+      <!-- Fase 02 -->
+      <div class="wb-phase" :class="{ active: currentPhase === 1, done: currentPhase > 1 }">
+        <div class="wb-phase-head">
+          <div class="wb-phase-left">
+            <div class="wb-phase-indicator">
+              <div class="wb-phase-ring" :class="{ spinning: currentPhase === 1, complete: currentPhase > 1 }">
+                <svg v-if="currentPhase > 1" viewBox="0 0 16 16" width="10" fill="none" stroke="#BDEBB5" stroke-width="2.5"><polyline points="3 8 6.5 11.5 13 4"/></svg>
+                <span v-else class="wb-phase-dot"></span>
+              </div>
+            </div>
+            <div class="wb-phase-meta">
+              <span class="wb-phase-num">FASE 02</span>
+              <span class="wb-phase-title">Mapeamento de Cenário</span>
+            </div>
           </div>
-          <span v-if="currentPhase > 1" class="wb-badge wb-badge--ok">COMPLETED</span>
-          <span v-else-if="currentPhase === 1" class="wb-badge wb-badge--run">{{ buildProgress?.progress || 0 }}%</span>
-          <span v-else class="wb-badge wb-badge--idle">PENDING</span>
+          <div class="wb-phase-status">
+            <span v-if="currentPhase > 1" class="wb-pill wb-pill--done">CONCLUÍDO</span>
+            <span v-else-if="currentPhase === 1" class="wb-pill wb-pill--live">
+              <span class="wb-live-dot"></span>{{ buildProgress?.progress || 0 }}%
+            </span>
+            <span v-else class="wb-pill wb-pill--idle">AGUARDANDO</span>
+          </div>
         </div>
 
-        <div class="wb-step-body">
-          <span class="wb-endpoint">POST /api/graph/build</span>
-          <p class="wb-desc">Documents are chunked and processed by Zep to build a knowledge graph, extract entities/relations, and form temporal memory plus community summaries.</p>
-
-          <div class="wb-stats">
-            <div class="wb-stat">
-              <span class="wb-stat-val">{{ graphStats.nodes }}</span>
-              <span class="wb-stat-key">NODES</span>
+        <div class="wb-phase-body">
+          <!-- Métricas do grafo -->
+          <div class="wb-metrics">
+            <div class="wb-metric">
+              <div class="wb-metric-value">{{ graphStats.nodes }}</div>
+              <div class="wb-metric-label">NÓS</div>
+              <div class="wb-metric-bar" :style="{ '--fill': Math.min(graphStats.nodes / 100, 1) }"></div>
             </div>
-            <div class="wb-stat">
-              <span class="wb-stat-val">{{ graphStats.edges }}</span>
-              <span class="wb-stat-key">EDGES</span>
+            <div class="wb-metric-divider"></div>
+            <div class="wb-metric">
+              <div class="wb-metric-value">{{ graphStats.edges }}</div>
+              <div class="wb-metric-label">ARESTAS</div>
+              <div class="wb-metric-bar" :style="{ '--fill': Math.min(graphStats.edges / 200, 1) }"></div>
             </div>
-            <div class="wb-stat">
-              <span class="wb-stat-val">{{ graphStats.types }}</span>
-              <span class="wb-stat-key">TYPES</span>
+            <div class="wb-metric-divider"></div>
+            <div class="wb-metric">
+              <div class="wb-metric-value">{{ graphStats.types }}</div>
+              <div class="wb-metric-label">TIPOS</div>
+              <div class="wb-metric-bar" :style="{ '--fill': Math.min(graphStats.types / 20, 1) }"></div>
             </div>
           </div>
 
-          <!-- Progress bar when building -->
-          <div v-if="currentPhase === 1 && buildProgress" class="wb-bar-wrap">
-            <div class="wb-bar">
-              <div class="wb-bar-fill" :style="{ width: (buildProgress.progress || 0) + '%' }"></div>
+          <!-- Barra de progresso -->
+          <div v-if="currentPhase === 1 && buildProgress" class="wb-progress-track">
+            <div class="wb-progress-header">
+              <span class="wb-progress-label">MAPEANDO REDE DE ENTIDADES</span>
+              <span class="wb-progress-pct">{{ buildProgress.progress || 0 }}%</span>
             </div>
-            <span class="wb-bar-pct">{{ buildProgress.progress || 0 }}%</span>
+            <div class="wb-progress-bar">
+              <div class="wb-progress-fill" :style="{ width: (buildProgress.progress || 0) + '%' }"></div>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Step 03 -->
-      <div class="wb-step" :class="{ active: currentPhase >= 2 }">
-        <div class="wb-step-head">
-          <div class="wb-step-left">
-            <span class="wb-step-n">03</span>
-            <span class="wb-step-title">Build Complete</span>
+      <!-- Fase 03 -->
+      <div class="wb-phase" :class="{ active: currentPhase >= 2 }">
+        <div class="wb-phase-head">
+          <div class="wb-phase-left">
+            <div class="wb-phase-indicator">
+              <div class="wb-phase-ring" :class="{ complete: currentPhase >= 2 }">
+                <svg v-if="currentPhase >= 2" viewBox="0 0 16 16" width="10" fill="none" stroke="#BDEBB5" stroke-width="2.5"><polyline points="3 8 6.5 11.5 13 4"/></svg>
+                <span v-else class="wb-phase-dot"></span>
+              </div>
+            </div>
+            <div class="wb-phase-meta">
+              <span class="wb-phase-num">FASE 03</span>
+              <span class="wb-phase-title">Rede Mapeada</span>
+            </div>
           </div>
-          <span v-if="currentPhase >= 2" class="wb-badge wb-badge--run">IN PROGRESS</span>
+          <div class="wb-phase-status">
+            <span v-if="currentPhase >= 2" class="wb-pill wb-pill--ready">
+              <svg viewBox="0 0 12 12" width="9" fill="none" stroke="#BDEBB5" stroke-width="2"><polyline points="2 6 5 9 10 3"/></svg>
+              PRONTO
+            </span>
+          </div>
         </div>
-
-        <div class="wb-step-body">
-          <span class="wb-endpoint">POST /api/simulation/create</span>
-          <p class="wb-desc">Graph build is complete. Continue to the next step: Environment Setup.</p>
+        <div class="wb-phase-body" v-if="currentPhase >= 2">
+          <div class="wb-ready-banner">
+            <div class="wb-ready-icon">
+              <svg viewBox="0 0 24 24" width="18" fill="none" stroke="#BDEBB5" stroke-width="1.5">
+                <circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="2"/><circle cx="20" cy="6" r="2"/>
+                <circle cx="4" cy="18" r="2"/><circle cx="20" cy="18" r="2"/>
+                <line x1="6" y1="6" x2="10" y2="11"/><line x1="18" y1="6" x2="14" y2="11"/>
+                <line x1="6" y1="18" x2="10" y2="13"/><line x1="18" y1="18" x2="14" y2="13"/>
+              </svg>
+            </div>
+            <div class="wb-ready-text">
+              <div class="wb-ready-title">Rede de entidades mapeada com sucesso</div>
+              <div class="wb-ready-sub">{{ graphStats.nodes }} nós · {{ graphStats.edges }} arestas · {{ graphStats.types }} tipos de entidade</div>
+            </div>
+          </div>
         </div>
       </div>
 
     </div>
 
-    <!-- Sticky action button -->
+    <!-- Barra de ação -->
     <div v-if="currentPhase >= 2" class="wb-action-bar">
-      <button
-        class="wb-action"
-        :disabled="creatingSimulation"
-        @click="handleEnterEnvSetup"
-      >
-        <span v-if="creatingSimulation" class="wb-spinner"></span>
-        {{ creatingSimulation ? 'Creating simulation...' : 'Go to Environment Setup →' }}
+      <button class="wb-action" :disabled="creatingSimulation" @click="handleEnterEnvSetup">
+        <span v-if="creatingSimulation" class="wb-btn-spinner"></span>
+        <span>{{ creatingSimulation ? 'Criando simulação...' : 'Configurar Ambiente' }}</span>
+        <svg v-if="!creatingSimulation" viewBox="0 0 16 16" width="13" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="8" x2="13" y2="8"/><polyline points="9 4 13 8 9 12"/></svg>
       </button>
     </div>
 
@@ -193,10 +259,10 @@ const handleEnterEnvSetup = async () => {
     if (res.success && res.data?.simulation_id) {
       router.push({ name: 'Simulation', params: { simulationId: res.data.simulation_id } })
     } else {
-      alert('Failed to create simulation: ' + (res.error || 'Unknown error'))
+      alert('Erro ao criar simulação: ' + (res.error || 'Erro desconhecido'))
     }
   } catch (err) {
-    alert('Exception: ' + err.message)
+    alert('Exceção: ' + err.message)
   } finally {
     creatingSimulation.value = false
   }
@@ -221,7 +287,7 @@ watch(() => props.systemLogs.length, () => {
 /* ── BASE ── */
 .wb {
   height: 100%;
-  background: #080808;
+  background: var(--bg);
   display: flex; flex-direction: column;
   font-family: 'Roboto Mono', 'JetBrains Mono', monospace;
   overflow: hidden;
@@ -229,207 +295,298 @@ watch(() => props.systemLogs.length, () => {
 
 .wb-scroll {
   flex: 1; overflow-y: auto;
-  padding: 20px; display: flex; flex-direction: column; gap: 1px;
+  padding: 12px; display: flex; flex-direction: column; gap: 6px;
 }
-.wb-scroll::-webkit-scrollbar { width: 3px; }
-.wb-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); }
+.wb-scroll::-webkit-scrollbar { width: 2px; }
+.wb-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); }
 
-/* ── STEP CARD ── */
-.wb-step {
-  border: 1px solid rgba(255,255,255,0.06);
+/* ── PHASE CARD ── */
+.wb-phase {
   border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.015);
   overflow: hidden;
-  transition: border-color 0.2s;
-  margin-bottom: 8px;
+  transition: border-color 0.3s, background 0.3s;
 }
-.wb-step.active { border-color: rgba(255,255,255,0.14); }
-.wb-step.done { border-color: rgba(34,197,94,0.15); }
+.wb-phase.active {
+  border-color: rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.03);
+}
+.wb-phase.done {
+  border-color: rgba(189,235,181,0.12);
+  background: rgba(189,235,181,0.015);
+}
 
-.wb-step-head {
+/* ── PHASE HEAD ── */
+.wb-phase-head {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 18px;
-  background: rgba(255,255,255,0.02);
-  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding: 14px 16px;
 }
-.wb-step.active .wb-step-head { background: rgba(255,255,255,0.04); }
 
-.wb-step-left { display: flex; align-items: center; gap: 14px; }
+.wb-phase-left { display: flex; align-items: center; gap: 12px; }
 
-.wb-step-n {
-  font-size: 1.1rem; font-weight: 700;
-  color: rgba(255,255,255,0.15);
-}
-.wb-step.active .wb-step-n,
-.wb-step.done .wb-step-n { color: rgba(255,255,255,0.6); }
-
-.wb-step-title {
-  font-size: 0.82rem; font-weight: 600;
-  color: rgba(255,255,255,0.5); letter-spacing: 0.02em;
-}
-.wb-step.active .wb-step-title { color: #fff; }
-
-/* ── BADGES ── */
-.wb-badge {
-  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em;
-  padding: 3px 8px; border-radius: 3px;
-}
-.wb-badge--ok { background: rgba(189,235,181,0.15); color: #BDEBB5; border: 1px solid rgba(189,235,181,0.35); }
-.wb-badge--run { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.55); border: 1px solid rgba(255,255,255,0.12); animation: blink 1.5s infinite; }
-.wb-badge--idle { background: transparent; color: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.07); }
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.5} }
-
-/* ── STEP BODY ── */
-.wb-step-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; }
-
-.wb-endpoint {
-  font-size: 0.65rem; color: rgba(255,255,255,0.2); letter-spacing: 0.06em;
-}
-.wb-desc { font-size: 0.75rem; color: rgba(255,255,255,0.35); line-height: 1.6; }
-
-/* Progress spinner */
-.wb-progress {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 0.72rem; color: rgba(255,255,255,0.4);
-}
-.wb-spinner {
-  width: 12px; height: 12px; flex-shrink: 0;
+/* Phase ring indicator */
+.wb-phase-indicator { flex-shrink: 0; }
+.wb-phase-ring {
+  width: 28px; height: 28px; border-radius: 50%;
   border: 1.5px solid rgba(255,255,255,0.1);
-  border-top-color: rgba(255,255,255,0.5);
-  border-radius: 50%; animation: spin 0.8s linear infinite;
+  display: flex; align-items: center; justify-content: center;
+  transition: border-color 0.3s;
+}
+.wb-phase-ring.spinning {
+  border-color: transparent;
+  border-top-color: rgba(255,255,255,0.4);
+  animation: spin 1s linear infinite;
+}
+.wb-phase-ring.complete {
+  border-color: rgba(189,235,181,0.4);
+  background: rgba(189,235,181,0.06);
 }
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* Tags */
-.wb-tags { display: flex; flex-direction: column; gap: 8px; transition: opacity 0.2s; }
-.wb-tags.dim { opacity: 0.2; pointer-events: none; }
-.wb-tag-label {
-  font-size: 0.58rem; color: rgba(255,255,255,0.2);
-  letter-spacing: 0.12em;
+.wb-phase-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(255,255,255,0.15);
 }
-.wb-tag-list { display: flex; flex-wrap: wrap; gap: 5px; }
-.wb-tag {
-  font-size: 0.68rem; padding: 3px 10px; border-radius: 3px;
-  cursor: pointer; transition: all 0.12s; letter-spacing: 0.03em;
+
+.wb-phase-meta { display: flex; flex-direction: column; gap: 2px; }
+.wb-phase-num {
+  font-size: 0.52rem; font-weight: 700; letter-spacing: 0.16em;
+  color: rgba(255,255,255,0.2);
 }
-.wb-tag--entity {
-  background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.5);
-  border: 1px solid rgba(255,255,255,0.08);
+.wb-phase.active .wb-phase-num { color: rgba(189,235,181,0.5); }
+.wb-phase.done .wb-phase-num { color: rgba(189,235,181,0.35); }
+
+.wb-phase-title {
+  font-size: 0.76rem; font-weight: 600;
+  color: rgba(255,255,255,0.25); letter-spacing: 0.02em;
+  font-family: var(--font);
 }
-.wb-tag--entity:hover { background: rgba(255,255,255,0.1); color: #fff; border-color: rgba(255,255,255,0.2); }
-.wb-tag--relation {
-  background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.35);
+.wb-phase.active .wb-phase-title { color: rgba(255,255,255,0.88); }
+.wb-phase.done .wb-phase-title { color: rgba(255,255,255,0.5); }
+
+/* ── PILLS ── */
+.wb-pill {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.52rem; font-weight: 700; letter-spacing: 0.12em;
+  padding: 3px 10px; border-radius: 20px;
+}
+.wb-pill--idle {
+  background: rgba(255,255,255,0.03);
+  color: rgba(255,255,255,0.15);
   border: 1px solid rgba(255,255,255,0.06);
 }
-.wb-tag--relation:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
-
-/* Stats */
-.wb-stats {
-  display: flex; gap: 0;
-  border: 1px solid rgba(255,255,255,0.07); border-radius: 6px; overflow: hidden;
+.wb-pill--live {
+  background: rgba(255,255,255,0.04);
+  color: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.1);
 }
-.wb-stat {
-  flex: 1; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px;
-  align-items: center; border-right: 1px solid rgba(255,255,255,0.07);
+.wb-pill--done {
+  background: rgba(189,235,181,0.07);
+  color: rgba(189,235,181,0.7);
+  border: 1px solid rgba(189,235,181,0.15);
 }
-.wb-stat:last-child { border-right: none; }
-.wb-stat-val {
-  font-size: 1.3rem; font-weight: 700; color: #fff;
-}
-.wb-stat-key { font-size: 0.58rem; color: rgba(255,255,255,0.2); letter-spacing: 0.12em; }
-
-/* Progress bar */
-.wb-bar-wrap { display: flex; align-items: center; gap: 10px; }
-.wb-bar {
-  flex: 1; height: 2px; background: rgba(255,255,255,0.07); border-radius: 1px; overflow: hidden;
-}
-.wb-bar-fill { height: 100%; background: rgba(255,255,255,0.4); border-radius: 1px; transition: width 0.5s ease; }
-.wb-bar-pct { font-size: 0.65rem; color: rgba(255,255,255,0.3); min-width: 30px; text-align: right; }
-
-/* Sticky action bar */
-.wb-action-bar {
-  flex-shrink: 0;
-  padding: 10px 16px;
-  background: #080808;
-  border-top: 1px solid rgba(255,255,255,0.07);
+.wb-pill--ready {
+  background: rgba(189,235,181,0.08);
+  color: #BDEBB5;
+  border: 1px solid rgba(189,235,181,0.25);
 }
 
-/* Action button */
-.wb-action {
-  display: flex; align-items: center; gap: 8px;
-  background: #fff; color: #000;
-  border: none; padding: 12px 20px; border-radius: 6px;
-  font-family: 'Roboto Mono', monospace; font-size: 0.76rem; font-weight: 600;
-  cursor: pointer; transition: opacity 0.12s; width: 100%; justify-content: center;
+.wb-live-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: rgba(255,255,255,0.5);
+  animation: pulse 1.4s ease-in-out infinite;
 }
-.wb-action:hover:not(:disabled) { opacity: 0.85; }
-.wb-action:disabled { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.2); cursor: not-allowed; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
-/* Overlay */
-.wb-overlay {
-  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 10px;
-  animation: fadein 0.15s ease;
-}
-@keyframes fadein { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
-
-.wb-overlay-head { display: flex; align-items: center; gap: 10px; }
-.wb-overlay-badge {
-  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em;
-  background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.5);
-  border: 1px solid rgba(255,255,255,0.1); padding: 2px 7px; border-radius: 3px;
-}
-.wb-overlay-name { font-size: 0.82rem; font-weight: 600; color: #fff; flex: 1; }
-.wb-overlay-close {
-  background: none; border: none; color: rgba(255,255,255,0.3);
-  font-size: 1.1rem; cursor: pointer; transition: color 0.1s;
-}
-.wb-overlay-close:hover { color: #fff; }
-.wb-overlay-desc { font-size: 0.75rem; color: rgba(255,255,255,0.4); line-height: 1.6; }
-.wb-overlay-section { display: flex; flex-direction: column; gap: 6px; }
-.wb-overlay-label { font-size: 0.58rem; color: rgba(255,255,255,0.2); letter-spacing: 0.12em; }
-
-.wb-attr-list { display: flex; flex-direction: column; gap: 4px; }
-.wb-attr { display: flex; align-items: baseline; gap: 8px; font-size: 0.72rem; }
-.wb-attr-name { color: rgba(255,255,255,0.6); font-weight: 600; }
-.wb-attr-type { color: rgba(255,255,255,0.2); font-size: 0.65rem; }
-.wb-attr-desc { color: rgba(255,255,255,0.3); flex: 1; }
-
-.wb-ex-list { display: flex; flex-wrap: wrap; gap: 4px; }
-.wb-ex {
-  font-size: 0.65rem; padding: 2px 8px;
-  background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4);
-  border: 1px solid rgba(255,255,255,0.08); border-radius: 3px;
+/* ── PHASE BODY ── */
+.wb-phase-body {
+  padding: 12px 16px 14px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  display: flex; flex-direction: column; gap: 10px;
 }
 
-.wb-conn-list { display: flex; flex-direction: column; gap: 4px; }
-.wb-conn {
-  display: flex; align-items: center; gap: 8px; font-size: 0.7rem;
-  color: rgba(255,255,255,0.5);
+/* ── ACTIVITY BAR ── */
+.wb-activity { display: flex; flex-direction: column; gap: 7px; }
+.wb-activity-bar {
+  height: 1px; background: rgba(255,255,255,0.05); border-radius: 1px; overflow: hidden;
 }
-.wb-conn-arrow { color: rgba(255,255,255,0.2); }
+.wb-activity-fill {
+  height: 100%; width: 40%;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,0.3), transparent);
+  animation: sweep 1.8s ease-in-out infinite;
+}
+@keyframes sweep { 0%{transform:translateX(-200%)} 100%{transform:translateX(400%)} }
+.wb-activity-msg { font-size: 0.66rem; color: rgba(255,255,255,0.28); }
 
-/* ── SYSTEM LOG ── */
-.wb-log {
-  flex-shrink: 0;
-  background: #000; border-top: 1px solid rgba(255,255,255,0.07);
+/* ── ONTOLOGY TAGS ── */
+.wb-ontology { display: flex; flex-direction: column; gap: 10px; }
+.wb-ontology-group { display: flex; flex-direction: column; gap: 6px; }
+.wb-ontology-label {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 0.54rem; color: rgba(255,255,255,0.2); letter-spacing: 0.12em;
 }
-.wb-log-header {
+.wb-tag-row { display: flex; flex-wrap: wrap; gap: 4px; }
+.wb-tag {
+  font-size: 0.64rem; padding: 3px 9px; border-radius: 4px;
+  cursor: pointer; transition: all 0.15s; letter-spacing: 0.02em;
+  font-family: inherit;
+}
+.wb-tag--entity {
+  background: rgba(255,255,255,0.03); color: rgba(255,255,255,0.4);
+  border: 1px solid rgba(255,255,255,0.07);
+}
+.wb-tag--entity:hover {
+  background: rgba(255,255,255,0.08); color: #fff;
+  border-color: rgba(255,255,255,0.18);
+}
+.wb-tag--relation {
+  background: transparent; color: rgba(255,255,255,0.25);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.wb-tag--relation:hover {
+  background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.55);
+}
+
+/* ── DETAIL PANEL ── */
+.wb-detail {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-left: 2px solid rgba(189,235,181,0.3);
+  border-radius: 6px; padding: 12px;
+  display: flex; flex-direction: column; gap: 10px;
+  animation: slidein 0.15s ease;
+}
+@keyframes slidein { from { opacity:0; transform: translateY(-4px); } to { opacity:1; transform:none; } }
+
+.wb-detail-head { display: flex; align-items: center; gap: 8px; }
+.wb-detail-type {
+  font-size: 0.5rem; font-weight: 700; letter-spacing: 0.14em;
+  background: rgba(189,235,181,0.08); color: rgba(189,235,181,0.6);
+  border: 1px solid rgba(189,235,181,0.15); padding: 2px 6px; border-radius: 3px;
+}
+.wb-detail-name { font-size: 0.8rem; font-weight: 600; color: #fff; flex: 1; }
+.wb-detail-close {
+  background: none; border: none; color: rgba(255,255,255,0.2);
+  cursor: pointer; padding: 2px; transition: color 0.12s;
+  display: flex; align-items: center;
+}
+.wb-detail-close:hover { color: rgba(255,255,255,0.7); }
+.wb-detail-desc { font-size: 0.7rem; color: rgba(255,255,255,0.35); line-height: 1.65; }
+.wb-detail-section { display: flex; flex-direction: column; gap: 6px; }
+.wb-detail-label { font-size: 0.5rem; color: rgba(255,255,255,0.18); letter-spacing: 0.14em; }
+
+.wb-attr-grid { display: flex; flex-direction: column; gap: 4px; }
+.wb-attr-row { display: flex; align-items: baseline; gap: 8px; font-size: 0.68rem; }
+.wb-attr-name { color: rgba(255,255,255,0.6); font-weight: 600; min-width: 80px; }
+.wb-attr-type { color: rgba(189,235,181,0.4); font-size: 0.6rem; min-width: 50px; }
+.wb-attr-desc { color: rgba(255,255,255,0.28); flex: 1; }
+
+.wb-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.wb-chip {
+  font-size: 0.62rem; padding: 2px 8px;
+  background: rgba(255,255,255,0.04); color: rgba(255,255,255,0.35);
+  border: 1px solid rgba(255,255,255,0.07); border-radius: 3px;
+}
+
+.wb-conn-list { display: flex; flex-direction: column; gap: 5px; }
+.wb-conn-row { display: flex; align-items: center; gap: 8px; }
+.wb-conn-node {
+  font-size: 0.66rem; color: rgba(255,255,255,0.5);
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07);
+  padding: 2px 8px; border-radius: 3px;
+}
+.wb-conn-line { display: flex; align-items: center; gap: 2px; flex: 1; }
+.wb-conn-arrow-line {
+  flex: 1; height: 1px;
+  background: linear-gradient(to right, rgba(189,235,181,0.15), rgba(189,235,181,0.4));
+}
+
+/* ── METRICS ── */
+.wb-metrics {
+  display: flex; align-items: stretch;
+  background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 7px; overflow: hidden;
+}
+.wb-metric {
+  flex: 1; padding: 12px 14px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.wb-metric-divider { width: 1px; background: rgba(255,255,255,0.05); flex-shrink: 0; }
+.wb-metric-value {
+  font-size: 1.5rem; font-weight: 700; color: #fff; line-height: 1;
+  letter-spacing: -0.02em;
+}
+.wb-phase.active .wb-metric-value { color: #fff; }
+.wb-metric-label {
+  font-size: 0.5rem; color: rgba(255,255,255,0.2); letter-spacing: 0.14em;
+}
+.wb-metric-bar {
+  margin-top: 6px; height: 2px;
+  background: rgba(255,255,255,0.05); border-radius: 1px; overflow: hidden;
+  position: relative;
+}
+.wb-metric-bar::after {
+  content: ''; position: absolute; inset: 0;
+  background: rgba(189,235,181,0.5);
+  width: calc(var(--fill, 0) * 100%);
+  transition: width 0.6s ease;
+}
+
+/* ── PROGRESS TRACK ── */
+.wb-progress-track { display: flex; flex-direction: column; gap: 6px; }
+.wb-progress-header {
   display: flex; justify-content: space-between; align-items: center;
-  padding: 8px 16px; border-bottom: 1px solid rgba(255,255,255,0.05);
 }
-.wb-log-label {
-  font-size: 0.58rem; color: rgba(255,255,255,0.2); letter-spacing: 0.12em;
+.wb-progress-label { font-size: 0.52rem; color: rgba(255,255,255,0.2); letter-spacing: 0.12em; }
+.wb-progress-pct { font-size: 0.62rem; color: rgba(189,235,181,0.6); font-weight: 700; }
+.wb-progress-bar {
+  height: 2px; background: rgba(255,255,255,0.05); border-radius: 1px; overflow: hidden;
 }
-.wb-log-id { font-size: 0.58rem; color: rgba(255,255,255,0.15); }
+.wb-progress-fill {
+  height: 100%;
+  background: linear-gradient(to right, rgba(189,235,181,0.3), rgba(189,235,181,0.7));
+  border-radius: 1px; transition: width 0.5s ease;
+}
 
-.wb-log-body {
-  height: 72px; overflow-y: auto; padding: 6px 16px;
-  display: flex; flex-direction: column; gap: 2px;
+/* ── READY BANNER ── */
+.wb-ready-banner {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 10px 12px;
+  background: rgba(189,235,181,0.04);
+  border: 1px solid rgba(189,235,181,0.1);
+  border-radius: 6px;
 }
-.wb-log-body::-webkit-scrollbar { width: 3px; }
-.wb-log-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.06); }
+.wb-ready-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  background: rgba(189,235,181,0.06); border: 1px solid rgba(189,235,181,0.12);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.wb-ready-title { font-size: 0.75rem; font-weight: 600; color: rgba(255,255,255,0.8); margin-bottom: 4px; }
+.wb-ready-sub { font-size: 0.62rem; color: rgba(255,255,255,0.3); }
 
-.wb-log-line { display: flex; gap: 14px; font-size: 0.65rem; line-height: 1.5; }
-.wb-log-time { color: rgba(255,255,255,0.2); min-width: 80px; flex-shrink: 0; }
-.wb-log-msg { color: rgba(255,255,255,0.4); word-break: break-all; }
+/* ── ACTION BAR ── */
+.wb-action-bar {
+  flex-shrink: 0; padding: 10px 12px;
+  background: rgba(6,6,6,0.8); backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.wb-action {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; padding: 11px 20px; border-radius: 6px; border: none;
+  background: rgba(189,235,181,0.9); color: #000;
+  font-family: 'Roboto Mono', monospace; font-size: 0.72rem; font-weight: 700;
+  letter-spacing: 0.04em; cursor: pointer; transition: all 0.15s;
+}
+.wb-action:hover:not(:disabled) { background: #BDEBB5; }
+.wb-action:disabled {
+  background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.15); cursor: not-allowed;
+}
+
+.wb-btn-spinner {
+  width: 11px; height: 11px; flex-shrink: 0;
+  border: 1.5px solid rgba(0,0,0,0.2);
+  border-top-color: #000; border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
 </style>

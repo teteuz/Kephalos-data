@@ -110,13 +110,13 @@
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                   <circle cx="12" cy="7" r="4"></circle>
                 </svg>
-                <span>{{ selectedAgent ? selectedAgent.username : 'Chat with any individual in the world' }}</span>
+                <span>{{ selectedAgent ? selectedAgent.username : 'Conversar com um agente' }}</span>
                 <svg class="dropdown-arrow" :class="{ open: showAgentDropdown }" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="6 9 12 15 18 9"></polyline>
                 </svg>
               </button>
               <div v-if="showAgentDropdown" class="dropdown-menu">
-                <div class="dropdown-header">Select chat target</div>
+                <div class="dropdown-header">Selecionar agente</div>
                 <div 
                   v-for="(agent, idx) in profiles" 
                   :key="idx"
@@ -141,7 +141,7 @@
                 <path d="M9 11l3 3L22 4"></path>
                 <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
               </svg>
-              <span>Send survey to the world</span>
+              <span>Enviar pesquisa aos agentes</span>
             </button>
           </div>
         </div>
@@ -154,8 +154,8 @@
             <div class="tools-card-header">
               <div class="tools-card-avatar">R</div>
               <div class="tools-card-info">
-                <div class="tools-card-name">Report Agent - Chat</div>
-                <div class="tools-card-subtitle">Fast chat mode for the report-generation agent with 4 specialist tools and complete KephalosData memory.</div>
+                <div class="tools-card-name">Agente de Relatório</div>
+                <div class="tools-card-subtitle">Modo de chat com o agente de geração de relatório — acesso a 4 ferramentas especializadas e memória completa da simulação.</div>
               </div>
               <button class="tools-card-toggle" @click="showToolsDetail = !showToolsDetail">
                 <svg :class="{ 'is-expanded': showToolsDetail }" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
@@ -172,8 +172,8 @@
                     </svg>
                   </div>
                   <div class="tool-content">
-                    <div class="tool-name">InsightForge Deep Attribution</div>
-                    <div class="tool-desc">Aligns real-world seed data with simulation state using Global/Local Memory for deep cross-temporal attribution.</div>
+                    <div class="tool-name">InsightForge · Atribuição</div>
+                    <div class="tool-desc">Cruza dados reais com o estado da simulação usando memória global/local para atribuição profunda entre períodos.</div>
                   </div>
                 </div>
                 <div class="tool-item tool-blue">
@@ -184,8 +184,8 @@
                     </svg>
                   </div>
                   <div class="tool-content">
-                    <div class="tool-name">PanoramaSearch Panoramic Tracking</div>
-                    <div class="tool-desc">Uses graph traversal to reconstruct event propagation and capture full information-flow topology.</div>
+                    <div class="tool-name">PanoramaSearch · Rastreamento</div>
+                    <div class="tool-desc">Usa travessia de grafo para reconstruir a propagação de eventos e capturar a topologia completa do fluxo de informação.</div>
                   </div>
                 </div>
                 <div class="tool-item tool-orange">
@@ -195,8 +195,8 @@
                     </svg>
                   </div>
                   <div class="tool-content">
-                    <div class="tool-name">QuickSearch Fast Retrieval</div>
-                    <div class="tool-desc">GraphRAG-powered instant query interface optimized for fast extraction of node attributes and discrete facts.</div>
+                    <div class="tool-name">QuickSearch · Consulta Rápida</div>
+                    <div class="tool-desc">Interface de consulta instantânea via GraphRAG, otimizada para extração rápida de atributos e fatos discretos do grafo.</div>
                   </div>
                 </div>
                 <div class="tool-item tool-green">
@@ -317,7 +317,7 @@
           <div class="survey-setup">
             <div class="setup-section">
               <div class="section-header">
-                <span class="section-title">Select survey targets</span>
+                <span class="section-title">Selecionar destinatários</span>
                 <span class="selection-count">Selected {{ selectedAgents.size }} / {{ profiles.length }}</span>
               </div>
               <div class="agents-grid">
@@ -345,20 +345,20 @@
                 </label>
               </div>
               <div class="selection-actions">
-                <button class="action-link" @click="selectAllAgents">Select all</button>
+                <button class="action-link" @click="selectAllAgents">Selecionar todos</button>
                 <span class="action-divider">|</span>
-                <button class="action-link" @click="clearAgentSelection">Clear</button>
+                <button class="action-link" @click="clearAgentSelection">Limpar</button>
               </div>
             </div>
 
             <div class="setup-section">
               <div class="section-header">
-                <span class="section-title">Survey question</span>
+                <span class="section-title">Pergunta da pesquisa</span>
               </div>
               <textarea 
                 v-model="surveyQuestion"
                 class="survey-input"
-                placeholder="Enter the question you want to ask all selected targets..."
+                placeholder="Digite a pergunta que deseja enviar para os agentes selecionados..."
                 rows="3"
               ></textarea>
             </div>
@@ -369,15 +369,15 @@
               @click="submitSurvey"
             >
               <span v-if="isSurveying" class="loading-spinner"></span>
-              <span v-else>Send survey</span>
+              <span v-else>Enviar pesquisa</span>
             </button>
           </div>
 
           <!-- Survey Results -->
           <div v-if="surveyResults.length > 0" class="survey-results">
             <div class="results-header">
-              <span class="results-title">Survey results</span>
-              <span class="results-count">{{ surveyResults.length }}  replies</span>
+              <span class="results-title">Resultados da pesquisa</span>
+              <span class="results-count">{{ surveyResults.length }} respostas</span>
             </div>
             <div class="results-list">
               <div 

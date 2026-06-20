@@ -23,7 +23,7 @@
           <button class="k-nav-btn k-nav-hide-mobile" @click="router.push('/simular')">Rodar Simulação</button>
           
           <div class="k-profile-wrap" v-click-outside="() => profileOpen = false">
-            <div class="k-nav-avatar" @click="profileOpen = !profileOpen">
+            <div class="k-nav-avatar" :style="{ background: avatarColor.bg, color: avatarColor.color, borderColor: avatarColor.border }" @click="profileOpen = !profileOpen" @keydown.escape="profileOpen = false" tabindex="0" role="button" :aria-expanded="profileOpen">
               {{ userInitials }}
             </div>
             <Transition name="profile-drop">
@@ -68,16 +68,14 @@
 
     <!-- HERO -->
     <section class="k-hero">
-      <canvas ref="heroCanvas" class="k-canvas"></canvas>
-
       <div class="k-hero-body">
         <h1 class="k-title">
           <span class="k-title-glow">O que as pessoas farão</span><br>
-          <span class="k-title-dim">Quando Acontecer ?</span>
+          <span class="k-title-dim">quando acontecer ?</span>
         </h1>
 
         <p class="k-subtitle">
-          Qualquer cenário. Qualquer decisão. O KEPHALOS executa milhares de agentes autônomos no seu contexto e entrega a inteligência que transforma incerteza em vantagem. Antes que o momento chegue.
+          Qualquer cenário. Qualquer decisão. O KEPHALOS executa agentes autônomos no seu contexto e entrega a inteligência que transforma incerteza em vantagem. Antes que o momento chegue.
         </p>
 
         <div class="k-hero-cta">
@@ -95,15 +93,14 @@
         </div>
       </div>
 
-      <video src="/ai orb 2.webm" class="k-brain-image" autoplay loop muted playsinline preload="auto"></video>
     </section>
 
     <!-- USE CASES -->
     <section class="k-usecases">
       <div class="k-uc-header">
         <span class="k-label">QUEM USA</span>
-        <h2 class="k-uc-title">Se a decisão importa,<br>a simulação vale.</h2>
-        <p class="k-uc-sub">Não importa o setor. Se você precisa prever como pessoas, mercados ou sistemas vão reagir a algo, o KEPHALOS foi feito para você.</p>
+        <h2 class="k-uc-title">Se a decisão importa,<br>a simulação ganha.</h2>
+        <p class="k-uc-sub">Não importa o setor. Se você precisa prever como pessoas, mercados ou sistemas vão reagir a algum cenário, o KEPHALOS foi feito para você.</p>
       </div>
       <div class="k-uc-grid">
         <div class="k-uc-card" v-for="uc in useCases" :key="uc.id" :class="{ 'k-uc-card--active': activeUC === uc.id }" @mouseenter="activeUC = uc.id" @mouseleave="activeUC = null">
@@ -132,7 +129,7 @@
     <section class="k-how">
       <div class="k-how-header">
         <span class="k-label">COMO FUNCIONA</span>
-        <h2 class="k-how-title">Do cenário à inteligência<br><span class="k-how-dim">em ~30 minutos reais.</span></h2>
+        <h2 class="k-how-title">Do cenário à realidade<br><span class="k-how-dim">em ~30 minutos reais.</span></h2>
       </div>
       <div class="k-how-steps">
         <div class="k-how-step" v-for="(step, i) in howSteps" :key="i">
@@ -150,8 +147,8 @@
       <div class="k-revenue-inner">
         <div class="k-revenue-left">
           <span class="k-label">POR QUE FAZER UPGRADE</span>
-          <h2 class="k-revenue-title">Você um passo à frente.<br>Sempre.</h2>
-          <p class="k-revenue-sub">Enquanto qualquer outro ainda está debatendo hipóteses, você já rodou o cenário, viu o resultado e ajustou a estratégia. O Pro remove todos os limites. Rode quantas simulações suas decisões exigirem.</p>
+          <h2 class="k-revenue-title">Você um passo à frente,<br>Sempre.</h2>
+          <p class="k-revenue-sub">Enquanto alguns ainda estão debatendo hipóteses, você já rodou o cenário, viu o resultado e ajustou a estratégia. O Pro remove todos os limites. Rode quantas simulações suas decisões exigirem.</p>
           <div class="k-revenue-features">
             <div class="k-rf-item">
               <div class="k-rf-icon">
@@ -253,7 +250,7 @@
               Criar conta grátis
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="3" y1="8" x2="13" y2="8"/><polyline points="9 4 13 8 9 12"/></svg>
             </router-link>
-            <router-link to="/login" class="k-btn-secondary">Entrar</router-link>
+            <router-link to="/login" class="k-btn-ghost">Entrar</router-link>
           </template>
         </div>
         <!-- Mini spec strip -->
@@ -270,7 +267,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useSubscription } from '../composables/useSubscription'
@@ -278,15 +275,26 @@ import { useTheme } from '../composables/useTheme'
 import AppLogo from '../components/AppLogo.vue'
 
 const router = useRouter()
-const heroCanvas = ref(null)
 
 const { isAuthenticated, userEmail, signOut } = useAuth()
+
 const { isSubscribed, planName, fetchSubscription, manageSubscription } = useSubscription()
 const { isDark, toggleTheme } = useTheme()
 
 const userInitials = computed(() => {
   if (!userEmail.value) return '?'
   return userEmail.value.slice(0, 2).toUpperCase()
+})
+
+const avatarColor = computed(() => {
+  if (!userEmail.value) return { bg: 'var(--surface-2)', color: 'var(--text2)', border: 'var(--border2)' }
+  let hash = 0
+  for (let i = 0; i < userEmail.value.length; i++) {
+    hash = userEmail.value.charCodeAt(i) + ((hash << 5) - hash)
+    hash = hash & hash
+  }
+  const hue = Math.abs(hash) % 360
+  return { bg: `hsl(${hue},55%,90%)`, color: `hsl(${hue},55%,32%)`, border: `hsl(${hue},45%,78%)` }
 })
 
 const handleSignOut = async () => {
@@ -441,49 +449,9 @@ const howSteps = [
   },
 ]
 
-let raf = null
 onMounted(() => {
-  const c = heroCanvas.value
-  if (!c) return
-  const resize = () => { c.width = c.offsetWidth; c.height = c.offsetHeight }
-  resize()
-  window.addEventListener('resize', resize)
-  const pts = Array.from({ length: 80 }, () => ({
-    x: Math.random(), y: Math.random(),
-    vx: (Math.random() - 0.5) * 0.0003,
-    vy: (Math.random() - 0.5) * 0.0003,
-    r: Math.random() * 0.8 + 0.2
-  }))
-  const draw = () => {
-    if (!c) return
-    const ctx = c.getContext('2d')
-    const W = c.width, H = c.height
-    const dark = document.documentElement.getAttribute('data-theme') === 'dark'
-    ctx.clearRect(0, 0, W, H)
-    pts.forEach(p => {
-      p.x += p.vx; p.y += p.vy
-      if (p.x < 0) p.x = 1; if (p.x > 1) p.x = 0
-      if (p.y < 0) p.y = 1; if (p.y > 1) p.y = 0
-    })
-    pts.forEach((a, i) => {
-      pts.forEach((b, j) => {
-        if (j <= i) return
-        const dx = (a.x - b.x) * W, dy = (a.y - b.y) * H
-        const d = Math.sqrt(dx * dx + dy * dy)
-        if (d > 140) return
-        const alpha = (1 - d / 140) * (dark ? 0.02 : 0.025)
-        ctx.beginPath(); ctx.moveTo(a.x * W, a.y * H); ctx.lineTo(b.x * W, b.y * H)
-        ctx.strokeStyle = dark ? `rgba(255,255,255,${alpha})` : `rgba(0,0,0,${alpha})`
-        ctx.lineWidth = 1; ctx.stroke()
-      })
-      ctx.beginPath(); ctx.arc(a.x * W, a.y * H, a.r, 0, Math.PI * 2)
-      ctx.fillStyle = dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)'; ctx.fill()
-    })
-    raf = requestAnimationFrame(draw)
-  }
-  draw()
+  if (isAuthenticated.value) fetchSubscription()
 })
-onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
 </script>
 
 <style scoped>
@@ -491,10 +459,7 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
 .k {
   min-height: 100vh;
   overflow-x: hidden;
-  background:
-    radial-gradient(ellipse 120% 55% at 50% -5%, var(--green-dim) 0%, transparent 58%),
-    radial-gradient(ellipse 60% 30% at 80% 110%, var(--green-dim) 0%, transparent 50%),
-    var(--bg);
+  background: var(--bg);
   color: var(--text);
   font-family: var(--font);
   --page-x: 80px; --section-y: 112px;
@@ -531,33 +496,32 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
 .k-nav-link:hover { color: var(--text); }
 
 .k-nav-btn-outline {
-  font-family: var(--font); font-size: 0.78rem;
+  font-family: var(--font); font-size: 0.78rem; font-weight: 500; letter-spacing: -0.01em;
   color: var(--text2); background: transparent;
-  border: 1px solid var(--border2); border-radius: 6px;
-  padding: 6px 16px; cursor: pointer; text-decoration: none;
-  transition: border-color 0.15s, color 0.15s;
+  border: 1px solid var(--border2); border-radius: 980px;
+  padding: 6px 18px; cursor: pointer; text-decoration: none;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
-.k-nav-btn-outline:hover { border-color: var(--text2); color: var(--text); }
+.k-nav-btn-outline:hover { border-color: var(--text2); color: var(--text); background: var(--surface-1); }
 
 .k-nav-btn {
-  font-family: var(--font); font-size: 0.78rem;
+  font-family: var(--font); font-size: 0.78rem; font-weight: 500; letter-spacing: -0.01em;
   background: var(--surface-2); color: var(--text2);
-  border: 1px solid var(--border2); border-radius: 6px;
-  padding: 6px 16px; cursor: pointer; transition: all 0.15s;
+  border: 1px solid var(--border2); border-radius: 980px;
+  padding: 6px 18px; cursor: pointer; transition: all 0.15s;
 }
 .k-nav-btn:hover { background: var(--surface-3); color: var(--text); }
 
 .k-nav-upgrade {
   display: inline-flex; align-items: center; gap: 5px;
   font-family: var(--font); font-size: 0.64rem; font-weight: 600;
-  color: #a78bfa; text-decoration: none;
-  background: rgba(167,139,250,0.07); border: 1px solid rgba(167,139,250,0.2);
+  color: var(--green-text); text-decoration: none;
+  background: var(--green-dim); border: 1px solid var(--green-border);
   border-radius: 100px; padding: 5px 13px; transition: all 0.2s; white-space: nowrap;
-  letter-spacing: 0.04em;
+  letter-spacing: -0.01em;
 }
-.k-nav-upgrade:hover { background: rgba(167,139,250,0.14); border-color: rgba(167,139,250,0.38); color: #c4b5fd; }
+.k-nav-upgrade:hover { background: var(--green-border); opacity: 0.9; }
 .k-nav-sparkle { font-size: 0.7rem; }
-.k-nav-upgrade:hover { background: var(--green-dim); opacity: 0.85; }
 
 .k-nav-avatar {
   width: 28px; height: 28px; border-radius: 50%;
@@ -592,41 +556,52 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
   grid-template-columns: 1fr 480px; align-items: center;
   padding: 80px var(--page-x); gap: 60px; position: relative; overflow: hidden;
 }
-.k-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .k-hero-body { position: relative; z-index: 1; max-width: 580px; }
-.k-title { font-size: 3.6rem; font-weight: 800; line-height: 1.12; letter-spacing: -0.04em; margin-bottom: 24px; }
-.k-title-dim { color: var(--text3); }
-.k-title-glow {
-  background: linear-gradient(100deg, var(--text) 30%, var(--green) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-.k-subtitle { font-size: 0.88rem; line-height: 1.85; color: var(--text2); max-width: 480px; margin-bottom: 40px; }
+.k-title { font-size: 5rem; font-weight: 800; line-height: 1.06; letter-spacing: -0.05em; margin-bottom: 28px; }
+.k-title-dim { color: var(--text); }
+.k-title-glow { color: var(--text); }
+.k-subtitle { font-size: 1rem; line-height: 1.7; color: var(--text2); max-width: 500px; margin-bottom: 44px; font-weight: 400; }
 .k-hero-cta { display: flex; align-items: center; gap: 14px; }
 .k-btn-run {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: var(--green-bright); color: #000; border: none; border-radius: 8px;
-  padding: 12px 24px; font-family: var(--font); font-size: 0.82rem;
-  font-weight: 700; cursor: pointer;
-  text-decoration: none; transition: opacity 0.15s, transform 0.1s;
-  box-shadow: var(--shadow-sm);
+  display: inline-flex; align-items: center; gap: 7px;
+  background: var(--green-bright); color: #000; border: none; border-radius: 980px;
+  padding: 11px 22px; font-family: var(--font); font-size: 0.84rem;
+  font-weight: 600; letter-spacing: -0.01em; cursor: pointer;
+  text-decoration: none;
+  transition: opacity var(--dur-base,0.18s), transform var(--dur-base,0.18s) var(--ease,ease), box-shadow var(--dur-base,0.18s);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.10);
 }
-.k-btn-run:hover { opacity: 0.88; transform: translateY(-1px); }
+.k-btn-run:hover { opacity: 0.86; transform: translateY(-1px); box-shadow: var(--shadow-md); }
+.k-btn-run:active { transform: translateY(0); opacity: 0.96; }
 .k-btn-secondary {
   display: inline-flex; align-items: center;
-  color: var(--text2); font-family: var(--font); font-size: 0.8rem;
-  text-decoration: none; transition: color 0.15s, border-color 0.15s;
-  border: 1px solid var(--border2); border-radius: 8px; padding: 12px 18px;
-}
-.k-btn-secondary:hover { color: var(--text); border-color: var(--text2); }
-
-.k-brain-image {
-  position: relative; z-index: 1; width: 100%; max-width: 480px;
-  border-radius: 16px; opacity: 0.85;
-  mix-blend-mode: screen;
+  color: var(--text); font-family: var(--font); font-size: 0.84rem;
+  font-weight: 500; letter-spacing: -0.01em;
+  text-decoration: none;
+  transition: background var(--dur-base,0.18s), color var(--dur-base,0.18s), border-color var(--dur-base,0.18s), transform var(--dur-base,0.18s) var(--ease,ease);
+  border: 1px solid var(--border2); border-radius: 980px; padding: 11px 22px;
   background: transparent;
 }
+.k-btn-secondary:hover { color: var(--text); border-color: var(--text2); background: var(--surface-1); transform: translateY(-1px); }
+.k-btn-secondary:active { transform: translateY(0); }
+.k-btn-ghost {
+  display: inline-flex; align-items: center;
+  color: var(--text2); font-family: var(--font); font-size: 0.84rem;
+  font-weight: 500; letter-spacing: -0.01em;
+  text-decoration: none; background: none; border: none; cursor: pointer;
+  padding: 11px 6px; position: relative;
+  transition: color var(--dur-base,0.18s), transform var(--dur-base,0.18s) var(--ease,ease);
+}
+.k-btn-ghost::after {
+  content: ''; position: absolute; bottom: 7px; left: 6px; right: 6px;
+  height: 1px; background: currentColor;
+  opacity: 0; transform: scaleX(0.85);
+  transition: opacity 0.15s, transform 0.18s var(--ease,ease);
+  transform-origin: center;
+}
+.k-btn-ghost:hover { color: var(--text); transform: translateY(-1px); }
+.k-btn-ghost:hover::after { opacity: 0.35; transform: scaleX(1); }
+
 @media (max-width: 1100px) {
   .k-brain-image { display: none !important; }
 }
@@ -646,7 +621,7 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
   max-width: 560px; margin: 0 auto; text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 16px;
 }
-.k-pricing-cta-title { font-size: 2rem; font-weight: 700; color: var(--text); }
+.k-pricing-cta-title { font-size: 2.8rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1.1; color: var(--text); }
 .k-pricing-cta-sub { font-size: 0.78rem; color: var(--text2); line-height: 1.7; }
 .k-pricing-cta-btns { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
 
@@ -659,7 +634,7 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
   max-width: 640px; margin: 0 auto; text-align: center;
   display: flex; flex-direction: column; align-items: center; gap: 20px;
 }
-.k-launch-title { font-size: 2.2rem; font-weight: 700; line-height: 1.25; margin: 0; color: var(--text); }
+.k-launch-title { font-size: 2.8rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1.1; margin: 0; color: var(--text); }
 .k-launch-dim { color: var(--text3); }
 .k-launch-sub { font-size: 0.78rem; color: var(--text2); line-height: 1.75; max-width: 480px; margin: 0; }
 .k-launch-btns { display: flex; align-items: center; gap: 14px; margin-top: 4px; }
@@ -677,7 +652,7 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
   .k-cap-grid { grid-template-columns: 1fr 1fr; row-gap: 36px; }
   .k-trust-stats { grid-template-columns: repeat(2, 1fr); }
   .k-trust-articles { grid-template-columns: 1fr; gap: 40px; }
-  .k-title { font-size: 2.8rem; }
+  .k-title { font-size: 3.4rem; }
 }
 
 @media (max-width: 640px) {
@@ -693,7 +668,7 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
 
   /* Hero — tall e impactante no mobile */
   .k-hero { padding: 56px 22px 52px; min-height: auto; gap: 0; }
-  .k-title { font-size: 2.5rem; line-height: 1.12; margin-bottom: 20px; letter-spacing: -0.025em; }
+  .k-title { font-size: 2.8rem; line-height: 1.08; margin-bottom: 20px; letter-spacing: -0.04em; }
   .k-subtitle { font-size: 0.84rem; line-height: 1.75; margin-bottom: 32px; max-width: 100%; }
   .k-sys-badge { font-size: 0.55rem; padding: 5px 10px; margin-bottom: 18px; }
 
@@ -701,6 +676,7 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
   .k-hero-cta { flex-direction: column !important; align-items: stretch !important; gap: 10px; }
   .k-btn-run { width: 100%; justify-content: center; padding: 14px 24px; font-size: 0.88rem; }
   .k-btn-secondary { width: 100%; justify-content: center; padding: 13px 24px; font-size: 0.84rem; }
+  .k-btn-ghost { width: 100%; justify-content: center; font-size: 0.84rem; }
 
   /* Sections */
   .k-uc-grid { grid-template-columns: 1fr !important; gap: 12px; }
@@ -722,7 +698,8 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
   /* Launch / Pricing CTA */
   .k-launch-btns { flex-direction: column !important; align-items: stretch !important; gap: 10px; }
   .k-launch-btns .k-btn-run,
-  .k-launch-btns .k-btn-secondary { width: 100%; justify-content: center; }
+  .k-launch-btns .k-btn-secondary,
+  .k-launch-btns .k-btn-ghost { width: 100%; justify-content: center; }
   .k-launch-title { font-size: 1.8rem; }
   .k-pricing-cta-btns { flex-direction: column !important; align-items: stretch !important; gap: 10px; }
   .k-pricing-cta-btns .k-btn-run,
@@ -797,8 +774,10 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
 .k-profile-signout { color: var(--red); opacity: 0.65; }
 .k-profile-signout:hover { background: rgba(239,68,68,0.06); opacity: 1; }
 
-.profile-drop-enter-active, .profile-drop-leave-active { transition: opacity 0.15s, transform 0.15s; }
-.profile-drop-enter-from, .profile-drop-leave-to { opacity: 0; transform: translateY(-6px); }
+.profile-drop-enter-active { transition: opacity 0.16s var(--ease,ease), transform 0.16s var(--ease,ease); }
+.profile-drop-leave-active { transition: opacity 0.1s ease, transform 0.1s ease; }
+.profile-drop-enter-from { opacity: 0; transform: translateY(-6px) scale(0.97); }
+.profile-drop-leave-to { opacity: 0; transform: translateY(-4px) scale(0.98); }
 
 /* Remove old k-status styles if any */
 .k-status { display: none; }
@@ -813,7 +792,7 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
   display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: start;
 }
 .k-revenue-left { display: flex; flex-direction: column; gap: 28px; }
-.k-revenue-title { font-size: 2rem; font-weight: 700; line-height: 1.3; color: var(--text); }
+.k-revenue-title { font-size: 2.8rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1.1; color: var(--text); }
 .k-revenue-sub { font-size: 0.78rem; color: var(--text2); line-height: 1.8; }
 
 .k-revenue-features { display: flex; flex-direction: column; gap: 18px; }
@@ -866,7 +845,7 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
   border-top: 1px solid var(--border);
 }
 .k-uc-header { margin-bottom: 52px; max-width: 560px; }
-.k-uc-title { font-size: 2.2rem; font-weight: 700; line-height: 1.25; margin: 12px 0 10px; color: var(--text); }
+.k-uc-title { font-size: 2.8rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1.1; margin: 0 0 12px; color: var(--text); }
 .k-uc-sub { font-size: 0.82rem; color: var(--text2); line-height: 1.7; }
 
 .k-uc-grid {
@@ -876,12 +855,13 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
   background: var(--bg2); border: 1px solid var(--border);
   border-radius: 12px; padding: 32px 28px;
   display: flex; flex-direction: column; gap: 14px;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color var(--dur-base,0.18s), box-shadow var(--dur-base,0.18s), transform var(--dur-base,0.18s) var(--ease,ease);
   cursor: default; box-shadow: var(--shadow-sm);
 }
 .k-uc-card--active {
   border-color: var(--green-border);
   box-shadow: var(--shadow-md);
+  transform: translateY(-2px);
 }
 .k-uc-icon { margin-bottom: 4px; }
 .k-uc-sector {
@@ -931,7 +911,7 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
   border-top: 1px solid var(--border);
 }
 .k-how-header { margin-bottom: 56px; }
-.k-how-title { font-size: 2.2rem; font-weight: 300; line-height: 1.3; margin-top: 12px; color: var(--text); }
+.k-how-title { font-size: 2.8rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1.1; margin: 0; color: var(--text); }
 .k-how-dim { color: var(--text3); }
 
 .k-how-steps {
@@ -966,8 +946,9 @@ onUnmounted(() => { if (raf) cancelAnimationFrame(raf) })
 
 /* Label overline */
 .k-label {
-  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.18em;
+  font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
   color: var(--green-text); text-transform: uppercase;
+  display: block; margin-bottom: 14px;
 }
 
 /* Pro highlight in compare table */

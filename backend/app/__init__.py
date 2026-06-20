@@ -9,10 +9,11 @@ import warnings
 # Must be set before other imports
 warnings.filterwarnings("ignore", message=".*resource_tracker.*")
 
-from flask import Flask, request
+from flask import Flask, request, jsonify
 from flask_cors import CORS
 
 from .config import Config
+from .extensions import limiter
 from .utils.logger import setup_logger, get_logger
 
 
@@ -39,8 +40,16 @@ def create_app(config_class=Config):
         logger.info("KephalosData Backend starting...")
         logger.info("=" * 50)
     
-    # 启用CORS
-    CORS(app, resources={r"/api/*": {"origins": "*"}})
+    # CORS — restrict to configured origins (set CORS_ORIGINS env var in production)
+    cors_origins = app.config.get('CORS_ORIGINS', ['*'])
+    CORS(app, resources={r"/api/*": {"origins": cors_origins}}, supports_credentials=False)
+
+    # Rate limiting
+    limiter.init_app(app)
+
+    @app.errorhandler(429)
+    def ratelimit_handler(e):
+        return jsonify(success=False, error='Muitas requisições. Aguarde um momento.'), 429
     
     # Register simulation process cleanup function (ensure child processes are terminated on exit)
     from .services.simulation_runner import SimulationRunner
@@ -48,25 +57,34 @@ def create_app(config_class=Config):
     if should_log_startup:
         logger.info("Simulation process cleanup registered")
     
-    # 请求日志中间件
+    # Request/response middleware
     @app.before_request
     def log_request():
-        logger = get_logger('kephalosdata.request')
-        logger.debug(f"Request: {request.method} {request.path}")
-        if request.content_type and 'json' in request.content_type:
-            logger.debug(f"Body: {request.get_json(silent=True)}")
-    
+        req_logger = get_logger('kephalosdata.request')
+        req_logger.debug(f"{request.method} {request.path}")
+
     @app.after_request
-    def log_response(response):
-        logger = get_logger('kephalosdata.request')
-        logger.debug(f"Response: {response.status_code}")
+    def add_security_headers(response):
+        # Prevent MIME-type sniffing
+        response.headers['X-Content-Type-Options'] = 'nosniff'
+        # Disallow embedding in iframes (clickjacking protection)
+        response.headers['X-Frame-Options'] = 'DENY'
+        # Limit referrer information sent to third parties
+        response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+        # Disable browser caching for API responses
+        if request.path.startswith('/api/'):
+            response.headers['Cache-Control'] = 'no-store'
+        req_logger = get_logger('kephalosdata.request')
+        req_logger.debug(f"→ {response.status_code}")
         return response
     
-    # 注册蓝图
+    # Register blueprints
     from .api import graph_bp, simulation_bp, report_bp
+    from .api.stripe_bp import stripe_bp
     app.register_blueprint(graph_bp, url_prefix='/api/graph')
     app.register_blueprint(simulation_bp, url_prefix='/api/simulation')
     app.register_blueprint(report_bp, url_prefix='/api/report')
+    app.register_blueprint(stripe_bp, url_prefix='/api/stripe')
     
     # Health check
     @app.route('/health')

@@ -185,3 +185,13 @@ export const getSimulationHistory = (limit = 20) => {
   return service.get('/api/simulation/history', { params: { limit } })
 }
 
+/**
+ * Inject an event/variable into a running simulation
+ * @param {string} simulationId
+ * @param {string} headline - The event headline to inject
+ * @param {string} platform - 'both' | 'twitter' | 'reddit'
+ */
+export const injectSimulationEvent = (simulationId, headline, platform = 'both') => {
+  return service.post(`/api/simulation/${simulationId}/inject-event`, { headline, platform })
+}
+

@@ -4,19 +4,79 @@ Step2: ZEP entity reading/filtering and OASIS simulation setup/run (automated)
 """
 
 import os
-import traceback
+from datetime import datetime, timezone
 from flask import request, jsonify, send_file
 
 from . import simulation_bp
 from ..config import Config
+from ..extensions import limiter
 from ..services.zep_entity_reader import ZepEntityReader
 from ..services.oasis_profile_generator import OasisProfileGenerator
 from ..services.simulation_manager import SimulationManager, SimulationStatus
 from ..services.simulation_runner import SimulationRunner, RunnerStatus
 from ..utils.logger import get_logger
+from ..utils.supabase_client import get_supabase_admin
 from ..models.project import ProjectManager
 
 logger = get_logger('kephalosdata.api.simulation')
+
+FREE_SIMULATION_LIMIT = 2
+
+
+# ── Quota helpers ──────────────────────────────────────────────────────────────
+
+def _get_user_id_from_request():
+    """Extract user_id from Bearer token. Returns user_id string or None."""
+    auth_header = request.headers.get('Authorization', '')
+    if not auth_header.startswith('Bearer '):
+        return None
+    token = auth_header.split(' ', 1)[1]
+    try:
+        result = get_supabase_admin().auth.get_user(token)
+        user = result.user
+        return user.id if user else None
+    except Exception:
+        return None
+
+
+def _is_pro_user(user_id):
+    """Return True if user has an active or trialing Pro subscription."""
+    try:
+        result = get_supabase_admin().table('subscriptions') \
+            .select('status') \
+            .eq('user_id', user_id) \
+            .in_('status', ['active', 'trialing']) \
+            .limit(1).execute()
+        return bool(result.data)
+    except Exception:
+        return False
+
+
+def _count_monthly_simulations(user_id):
+    """Count simulations created by user in the current calendar month."""
+    try:
+        now = datetime.now(timezone.utc)
+        month_start = datetime(now.year, now.month, 1, tzinfo=timezone.utc).isoformat()
+        result = get_supabase_admin().table('simulation_usage') \
+            .select('id', count='exact') \
+            .eq('user_id', user_id) \
+            .gte('created_at', month_start) \
+            .execute()
+        return result.count if result.count is not None else len(result.data or [])
+    except Exception as e:
+        logger.warning(f'Failed to count simulation usage: {e}')
+        return 0
+
+
+def _record_simulation_usage(user_id, simulation_id):
+    """Insert a usage record after a simulation is successfully created."""
+    try:
+        get_supabase_admin().table('simulation_usage').insert({
+            'user_id': user_id,
+            'simulation_id': simulation_id,
+        }).execute()
+    except Exception as e:
+        logger.error(f'Failed to record simulation usage: {e}')
 
 
 # Interview prompt 优化前缀
@@ -84,8 +144,7 @@ def get_graph_entities(graph_id: str):
         logger.error(f"Failed to fetch graph entities: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -117,8 +176,7 @@ def get_entity_detail(graph_id: str, entity_uuid: str):
         logger.error(f"Failed to fetch entity detail: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -154,14 +212,14 @@ def get_entities_by_type(graph_id: str, entity_type: str):
         logger.error(f"获取实体失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
 # ============== 模拟管理接口 ==============
 
 @simulation_bp.route('/create', methods=['POST'])
+@limiter.limit("20 per hour")
 def create_simulation():
     """
     Create a new simulation
@@ -190,30 +248,45 @@ def create_simulation():
             }
         }
     """
+    # ── Quota check ────────────────────────────────────────────────────────────
+    user_id = _get_user_id_from_request()
+    if user_id and not _is_pro_user(user_id):
+        used = _count_monthly_simulations(user_id)
+        if used >= FREE_SIMULATION_LIMIT:
+            return jsonify({
+                "success": False,
+                "error": f"Limite de {FREE_SIMULATION_LIMIT} simulações/mês atingido no plano Gratuito. Faça upgrade para Pro.",
+                "limit_reached": True,
+                "plan": "free",
+                "used": used,
+                "limit": FREE_SIMULATION_LIMIT,
+            }), 403
+    # ───────────────────────────────────────────────────────────────────────────
+
     try:
         data = request.get_json() or {}
-        
+
         project_id = data.get('project_id')
         if not project_id:
             return jsonify({
                 "success": False,
-                "error": "请提供 project_id"
+                "error": "project_id is required"
             }), 400
-        
+
         project = ProjectManager.get_project(project_id)
         if not project:
             return jsonify({
                 "success": False,
-                "error": f"项目不存在: {project_id}"
+                "error": f"Project not found: {project_id}"
             }), 404
-        
+
         graph_id = data.get('graph_id') or project.graph_id
         if not graph_id:
             return jsonify({
                 "success": False,
-                "error": "项目尚未构建图谱，请先调用 /api/graph/build"
+                "error": "Graph not built yet. Call /api/graph/build first."
             }), 400
-        
+
         manager = SimulationManager()
         state = manager.create_simulation(
             project_id=project_id,
@@ -221,18 +294,21 @@ def create_simulation():
             enable_twitter=data.get('enable_twitter', True),
             enable_reddit=data.get('enable_reddit', True),
         )
-        
+
+        # Record usage so the monthly counter stays accurate
+        if user_id:
+            _record_simulation_usage(user_id, state.simulation_id)
+
         return jsonify({
             "success": True,
             "data": state.to_dict()
         })
-        
+
     except Exception as e:
-        logger.error(f"创建模拟失败: {str(e)}")
+        logger.error(f"create_simulation failed: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -629,8 +705,7 @@ def prepare_simulation():
         logger.error(f"启动准备任务失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -775,8 +850,7 @@ def get_simulation(simulation_id: str):
         logger.error(f"获取模拟状态失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -784,10 +858,14 @@ def get_simulation(simulation_id: str):
 def list_simulations():
     """
     列出所有模拟
-    
+
     Query参数：
         project_id: 按项目ID过滤（可选）
     """
+    user_id = _get_user_id_from_request()
+    if not user_id:
+        return jsonify({"success": False, "error": "Authentication required"}), 401
+
     try:
         project_id = request.args.get('project_id')
         
@@ -804,8 +882,7 @@ def list_simulations():
         logger.error(f"列出模拟失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -872,9 +949,9 @@ def _get_report_id_for_simulation(simulation_id: str) -> str:
 def get_simulation_history():
     """
     获取历史模拟列表（带项目详情）
-    
+
     用于首页历史项目展示，返回包含项目名称、描述等丰富信息的模拟列表
-    
+
     Query参数：
         limit: 返回数量限制（默认20）
     
@@ -903,6 +980,10 @@ def get_simulation_history():
             "count": 7
         }
     """
+    user_id = _get_user_id_from_request()
+    if not user_id:
+        return jsonify({"success": False, "error": "Authentication required"}), 401
+
     try:
         limit = request.args.get('limit', 20, type=int)
         
@@ -977,8 +1058,7 @@ def get_simulation_history():
         logger.error(f"获取历史模拟失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -1015,8 +1095,7 @@ def get_simulation_profiles(simulation_id: str):
         logger.error(f"获取Profile失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -1125,8 +1204,7 @@ def get_simulation_profiles_realtime(simulation_id: str):
         logger.error(f"实时获取Profile失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -1245,8 +1323,7 @@ def get_simulation_config_realtime(simulation_id: str):
         logger.error(f"实时获取Config失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -1281,8 +1358,7 @@ def get_simulation_config(simulation_id: str):
         logger.error(f"获取配置失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -1310,8 +1386,7 @@ def download_simulation_config(simulation_id: str):
         logger.error(f"下载配置失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -1362,14 +1437,14 @@ def download_simulation_script(script_name: str):
         logger.error(f"下载脚本失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
 # ============== Profile生成接口（独立使用） ==============
 
 @simulation_bp.route('/generate-profiles', methods=['POST'])
+@limiter.limit("10 per hour")
 def generate_profiles():
     """
     直接从图谱生成OASIS Agent Profile（不创建模拟）
@@ -1436,8 +1511,7 @@ def generate_profiles():
         logger.error(f"生成Profile失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -1631,8 +1705,7 @@ def start_simulation():
         logger.error(f"启动模拟失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -1690,8 +1763,7 @@ def stop_simulation():
         logger.error(f"停止模拟失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -1750,8 +1822,7 @@ def get_run_status(simulation_id: str):
         logger.error(f"获取运行状态失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -1851,8 +1922,7 @@ def get_run_status_detail(simulation_id: str):
         logger.error(f"获取详细状态失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -1905,8 +1975,7 @@ def get_simulation_actions(simulation_id: str):
         logger.error(f"获取动作历史失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -1945,8 +2014,7 @@ def get_simulation_timeline(simulation_id: str):
         logger.error(f"获取时间线失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -1972,8 +2040,7 @@ def get_agent_stats(simulation_id: str):
         logger.error(f"获取Agent统计失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -2052,8 +2119,7 @@ def get_simulation_posts(simulation_id: str):
         logger.error(f"获取帖子失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -2127,14 +2193,14 @@ def get_simulation_comments(simulation_id: str):
         logger.error(f"获取评论失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
 # ============== Interview 采访接口 ==============
 
 @simulation_bp.route('/interview', methods=['POST'])
+@limiter.limit("30 per hour")
 def interview_agent():
     """
     采访单个Agent
@@ -2258,12 +2324,12 @@ def interview_agent():
         logger.error(f"Interview失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
 @simulation_bp.route('/interview/batch', methods=['POST'])
+@limiter.limit("10 per hour")
 def interview_agents_batch():
     """
     批量采访多个Agent
@@ -2396,12 +2462,12 @@ def interview_agents_batch():
         logger.error(f"批量Interview失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
 @simulation_bp.route('/interview/all', methods=['POST'])
+@limiter.limit("5 per hour")
 def interview_all_agents():
     """
     全局采访 - 使用相同问题采访所有Agent
@@ -2499,8 +2565,7 @@ def interview_all_agents():
         logger.error(f"全局Interview失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -2571,8 +2636,7 @@ def get_interview_history():
         logger.error(f"获取Interview历史失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -2636,8 +2700,7 @@ def get_env_status():
         logger.error(f"获取环境状态失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
 
 
@@ -2706,6 +2769,96 @@ def close_simulation_env():
         logger.error(f"关闭环境失败: {str(e)}")
         return jsonify({
             "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc()
+            "error": str(e)
         }), 500
+
+
+@simulation_bp.route('/<simulation_id>/analytics/influence', methods=['GET'])
+def get_influence_analytics(simulation_id: str):
+    """
+    Get influence attribution analysis for a completed simulation.
+
+    Returns top influencers, influence network edges, and platform stats.
+    Uses cached report if available, otherwise runs fresh analysis.
+    """
+    try:
+        from ..services.influence_attribution import get_influence_report
+        result = get_influence_report(simulation_id)
+        if result.get("success"):
+            return jsonify(result)
+        else:
+            return jsonify(result), 404
+    except Exception as e:
+        logger.error(f"Influence analytics error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@simulation_bp.route('/<simulation_id>/inject-event', methods=['POST'])
+def inject_simulation_event(simulation_id: str):
+    """
+    Inject a variable/event into a running simulation.
+
+    The injected event is written as a seed post to the simulation's
+    twitter and reddit action logs, so it becomes visible in the feed
+    and can influence agents in future rounds.
+
+    Body: { "headline": str, "platform": "both"|"twitter"|"reddit" }
+    """
+    try:
+        data = request.get_json() or {}
+        headline = data.get('headline', '').strip()
+        platform = data.get('platform', 'both')
+
+        if not headline:
+            return jsonify({"success": False, "error": "headline is required"}), 400
+
+        import os, json
+        from datetime import datetime
+
+        simulation_dir = os.path.join(Config.OASIS_SIMULATION_DATA_DIR, simulation_id)
+        if not os.path.exists(simulation_dir):
+            return jsonify({"success": False, "error": "Simulation not found"}), 404
+
+        injected_action = {
+            "round": 0,
+            "timestamp": datetime.now().isoformat(),
+            "agent_id": 0,
+            "agent_name": "[INJECTED EVENT]",
+            "action_type": "CREATE_POST",
+            "action_args": {
+                "content": headline,
+                "injected": True
+            },
+            "result": "ok",
+            "success": True,
+        }
+
+        written = []
+        platforms_to_write = []
+        if platform in ("both", "twitter"):
+            platforms_to_write.append("twitter")
+        if platform in ("both", "reddit"):
+            platforms_to_write.append("reddit")
+
+        for p in platforms_to_write:
+            log_path = os.path.join(simulation_dir, p, "actions.jsonl")
+            os.makedirs(os.path.dirname(log_path), exist_ok=True)
+            entry = {**injected_action, "platform": p}
+            with open(log_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+            written.append(p)
+
+        logger.info(f"Injected event into simulation {simulation_id}: '{headline[:60]}'")
+        return jsonify({
+            "success": True,
+            "data": {
+                "simulation_id": simulation_id,
+                "headline": headline,
+                "platforms_written": written,
+                "timestamp": injected_action["timestamp"]
+            }
+        })
+
+    except Exception as e:
+        logger.error(f"Event injection error: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500

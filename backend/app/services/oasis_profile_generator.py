@@ -38,6 +38,11 @@ class OasisAgentProfile:
     country: Optional[str] = None
     profession: Optional[str] = None
     interested_topics: List[str] = field(default_factory=list)
+    emotional_baseline: Dict[str, float] = field(default_factory=lambda: {
+        "valence": 0.5, "anxiety": 0.3, "trust": 0.6, "excitability": 0.4
+    })
+    cognitive_biases: List[str] = field(default_factory=list)
+    socioeconomic_tier: str = "medium"
     source_entity_uuid: Optional[str] = None
     source_entity_type: Optional[str] = None
     created_at: str = field(default_factory=lambda: datetime.now().strftime("%Y-%m-%d"))
@@ -64,6 +69,11 @@ class OasisAgentProfile:
             profile["profession"] = self.profession
         if self.interested_topics:
             profile["interested_topics"] = self.interested_topics
+        profile["emotional_baseline"] = self.emotional_baseline
+        if self.cognitive_biases:
+            profile["cognitive_biases"] = self.cognitive_biases
+        if self.socioeconomic_tier:
+            profile["socioeconomic_tier"] = self.socioeconomic_tier
         return profile
 
     def to_twitter_format(self) -> Dict[str, Any]:
@@ -90,6 +100,11 @@ class OasisAgentProfile:
             profile["profession"] = self.profession
         if self.interested_topics:
             profile["interested_topics"] = self.interested_topics
+        profile["emotional_baseline"] = self.emotional_baseline
+        if self.cognitive_biases:
+            profile["cognitive_biases"] = self.cognitive_biases
+        if self.socioeconomic_tier:
+            profile["socioeconomic_tier"] = self.socioeconomic_tier
         return profile
 
     def to_dict(self) -> Dict[str, Any]:
@@ -109,6 +124,9 @@ class OasisAgentProfile:
             "country": self.country,
             "profession": self.profession,
             "interested_topics": self.interested_topics,
+            "emotional_baseline": self.emotional_baseline,
+            "cognitive_biases": self.cognitive_biases,
+            "socioeconomic_tier": self.socioeconomic_tier,
             "source_entity_uuid": self.source_entity_uuid,
             "source_entity_type": self.source_entity_type,
             "created_at": self.created_at,
@@ -181,6 +199,11 @@ class OasisProfileGenerator:
             country=profile_data.get("country"),
             profession=profile_data.get("profession"),
             interested_topics=profile_data.get("interested_topics", []),
+            emotional_baseline=profile_data.get("emotional_baseline", {
+                "valence": 0.5, "anxiety": 0.3, "trust": 0.6, "excitability": 0.4
+            }),
+            cognitive_biases=profile_data.get("cognitive_biases", []),
+            socioeconomic_tier=profile_data.get("socioeconomic_tier", "medium"),
             source_entity_uuid=entity.uuid,
             source_entity_type=entity_type,
         )
@@ -426,8 +449,20 @@ Return JSON with these fields:
 6. country: Country in English (realistic for the entity)
 7. profession: Occupation (specific and realistic)
 8. interested_topics: Array of 3-8 topics (diverse and relevant)
+9. emotional_baseline: Object with these float values (0.0-1.0):
+   - valence: overall positive/negative mood baseline (0=very negative, 1=very positive)
+   - anxiety: baseline anxiety/stress level (0=calm, 1=highly anxious)
+   - trust: baseline trust in institutions and others (0=deeply cynical, 1=very trusting)
+   - excitability: tendency to strong emotional reactions (0=stoic, 1=highly reactive)
+10. cognitive_biases: Array of 2-4 biases from this list that fit the persona:
+    ["confirmation_bias", "authority_bias", "in_group_bias", "availability_bias",
+     "recency_bias", "optimism_bias", "negativity_bias", "anchoring_bias",
+     "dunning_kruger", "bandwagon_bias", "status_quo_bias", "attribution_bias"]
+11. socioeconomic_tier: One of "low", "medium", "high", "very_high" (realistic for entity)
 
-Important: All values must be strings or numbers, no newlines in strings. Use English for all fields. Make the persona highly detailed and realistic.
+Also incorporate the emotional baseline and cognitive biases into the persona text — describe how the person's emotional tendencies and reasoning patterns affect their online behavior and communication style.
+
+Important: All string values must have no newlines. Use English for all fields. Make the persona highly detailed and realistic.
 """
 
     def _build_group_persona_prompt(self, entity_name, entity_type, entity_summary, entity_attributes, context):
@@ -467,8 +502,19 @@ Return JSON with these fields:
 6. country: Country in English (realistic for the organization)
 7. profession: Institutional function/role
 8. interested_topics: Array of 3-8 focus areas (relevant to mission)
+9. emotional_baseline: Object with these float values (0.0-1.0) representing the account's tone:
+   - valence: overall tone positivity (0=very critical/negative, 1=very positive/promotional)
+   - anxiety: urgency/alarm tendency (0=calm informational, 1=high urgency)
+   - trust: institutional trust projected (0=adversarial, 1=highly cooperative)
+   - excitability: responsiveness to events (0=stoic/delayed, 1=rapid reactive)
+10. cognitive_biases: Array of 2-3 institutional biases from:
+    ["in_group_bias", "authority_bias", "confirmation_bias", "status_quo_bias",
+     "optimism_bias", "attribution_bias", "anchoring_bias", "bandwagon_bias"]
+11. socioeconomic_tier: One of "medium", "high", "very_high" (institutional level)
 
-Important: All values must be strings or numbers, no null, no newlines. Use English for all fields. Make the profile highly detailed and authentic to the organization's character.
+Also incorporate the account's emotional tone and institutional biases into the persona description.
+
+Important: All string values must have no newlines. No null values. Use English. Make the profile authentic to the organization's character.
 """
 
     def _generate_profile_rule_based(self, entity_name, entity_type, entity_summary, entity_attributes):
@@ -480,6 +526,9 @@ Important: All values must be strings or numbers, no null, no newlines. Use Engl
                 "age": random.randint(18, 30), "gender": random.choice(["male", "female"]),
                 "mbti": random.choice(self.MBTI_TYPES), "country": random.choice(self.COUNTRIES),
                 "profession": "Student", "interested_topics": ["Education", "Social Issues", "Technology"],
+                "emotional_baseline": {"valence": 0.55, "anxiety": 0.45, "trust": 0.5, "excitability": 0.6},
+                "cognitive_biases": ["in_group_bias", "availability_bias"],
+                "socioeconomic_tier": "medium",
             }
         elif t in ["publicfigure", "expert", "faculty"]:
             return {
@@ -489,6 +538,9 @@ Important: All values must be strings or numbers, no null, no newlines. Use Engl
                 "mbti": random.choice(["ENTJ", "INTJ", "ENTP", "INTP"]), "country": random.choice(self.COUNTRIES),
                 "profession": entity_attributes.get("occupation", "Expert") if entity_attributes else "Expert",
                 "interested_topics": ["Politics", "Economics", "Culture & Society"],
+                "emotional_baseline": {"valence": 0.6, "anxiety": 0.25, "trust": 0.55, "excitability": 0.35},
+                "cognitive_biases": ["authority_bias", "confirmation_bias"],
+                "socioeconomic_tier": "high",
             }
         elif t in ["mediaoutlet", "socialmediaplatform"]:
             return {
@@ -496,6 +548,9 @@ Important: All values must be strings or numbers, no null, no newlines. Use Engl
                 "persona": f"{entity_name} is a media entity reporting news and facilitating public discourse.",
                 "age": 30, "gender": "other", "mbti": "ISTJ", "country": "Unknown",
                 "profession": "Media", "interested_topics": ["General News", "Current Events", "Public Affairs"],
+                "emotional_baseline": {"valence": 0.5, "anxiety": 0.3, "trust": 0.65, "excitability": 0.5},
+                "cognitive_biases": ["status_quo_bias", "authority_bias"],
+                "socioeconomic_tier": "high",
             }
         elif t in ["university", "governmentagency", "ngo", "organization"]:
             return {
@@ -503,6 +558,9 @@ Important: All values must be strings or numbers, no null, no newlines. Use Engl
                 "persona": f"{entity_name} is an institutional entity that communicates official positions.",
                 "age": 30, "gender": "other", "mbti": "ISTJ", "country": "Unknown",
                 "profession": entity_type, "interested_topics": ["Public Policy", "Community", "Announcements"],
+                "emotional_baseline": {"valence": 0.55, "anxiety": 0.2, "trust": 0.7, "excitability": 0.25},
+                "cognitive_biases": ["status_quo_bias", "in_group_bias"],
+                "socioeconomic_tier": "very_high",
             }
         else:
             return {
@@ -511,6 +569,9 @@ Important: All values must be strings or numbers, no null, no newlines. Use Engl
                 "age": random.randint(25, 50), "gender": random.choice(["male", "female"]),
                 "mbti": random.choice(self.MBTI_TYPES), "country": random.choice(self.COUNTRIES),
                 "profession": entity_type, "interested_topics": ["General", "Social Issues"],
+                "emotional_baseline": {"valence": 0.5, "anxiety": 0.35, "trust": 0.5, "excitability": 0.4},
+                "cognitive_biases": ["availability_bias"],
+                "socioeconomic_tier": "medium",
             }
 
     def set_graph_id(self, graph_id):

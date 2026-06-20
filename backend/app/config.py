@@ -19,10 +19,20 @@ else:
 
 class Config:
     """Flask配置类"""
-    
+
     # Flask configuration
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'kephalosdata-secret-key')
-    DEBUG = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
+    _secret = os.environ.get('SECRET_KEY')
+    if not _secret:
+        import logging as _log
+        _log.warning(
+            "SECRET_KEY not set — generating a random one. "
+            "Sessions will break on restart and differ between workers. "
+            "Set SECRET_KEY in your environment variables."
+        )
+        import secrets as _s
+        _secret = _s.token_hex(32)
+    SECRET_KEY = _secret
+    DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
     
     # JSON配置 - 禁用ASCII转义，让中文直接显示（而不是 \uXXXX 格式）
     JSON_AS_ASCII = False
@@ -58,6 +68,22 @@ class Config:
         'TREND', 'REFRESH', 'DO_NOTHING', 'FOLLOW', 'MUTE'
     ]
     
+    # ── CORS ─────────────────────────────────────────────────────────────────
+    # Comma-separated list of allowed origins. In production set to your frontend domain.
+    CORS_ORIGINS = [
+        o.strip()
+        for o in os.environ.get('CORS_ORIGINS', 'http://localhost:5173,http://localhost:4173').split(',')
+        if o.strip()
+    ]
+
+    # ── Stripe ────────────────────────────────────────────────────────────────
+    STRIPE_SECRET_KEY = os.environ.get('STRIPE_SECRET_KEY', '')
+    STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET', '')
+
+    # ── Supabase (server-side, service role) ──────────────────────────────────
+    SUPABASE_URL = os.environ.get('SUPABASE_URL', '')
+    SUPABASE_SERVICE_ROLE_KEY = os.environ.get('SUPABASE_SERVICE_ROLE_KEY', '')
+
     # Report Agent配置
     REPORT_AGENT_MAX_TOOL_CALLS = int(os.environ.get('REPORT_AGENT_MAX_TOOL_CALLS', '5'))
     REPORT_AGENT_MAX_REFLECTION_ROUNDS = int(os.environ.get('REPORT_AGENT_MAX_REFLECTION_ROUNDS', '2'))

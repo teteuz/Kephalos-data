@@ -6,37 +6,23 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">01</span>
-            <span class="step-title">Simulation Instance Initialization</span>
+            <span class="step-title">Inicialização da Simulação</span>
           </div>
           <div class="step-status">
-            <span v-if="phase > 0" class="badge success">Completed</span>
-            <span v-else class="badge processing">Initializing</span>
+            <span v-if="phase > 0" class="badge success">Concluído</span>
+            <span v-else class="badge processing">Inicializando</span>
           </div>
         </div>
         
         <div class="card-content">
           <p class="api-note">POST /api/simulation/create</p>
           <p class="description">
-            Create a new simulation instance and load simulation-world parameter templates.
+            Cria uma nova instância de simulação e carrega os templates de parâmetros do mundo simulado.
           </p>
 
-          <div v-if="simulationId" class="info-card">
-            <div class="info-row">
-              <span class="info-label">Project ID</span>
-              <span class="info-value mono">{{ projectData?.project_id }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Graph ID</span>
-              <span class="info-value mono">{{ projectData?.graph_id }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Simulation ID</span>
-              <span class="info-value mono">{{ simulationId }}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Task ID</span>
-              <span class="info-value mono">{{ taskId || 'Async task completed' }}</span>
-            </div>
+          <div v-if="simulationId" class="info-card-compact">
+            <span class="info-compact-label">Simulação criada</span>
+            <span class="info-compact-id mono">{{ simulationId?.slice(0, 8) }}…</span>
           </div>
         </div>
       </div>
@@ -46,41 +32,41 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">02</span>
-            <span class="step-title">Generate Agent Profiles</span>
+            <span class="step-title">Gerar Perfis de Agentes</span>
           </div>
           <div class="step-status">
-            <span v-if="phase > 1" class="badge success">Completed</span>
+            <span v-if="phase > 1" class="badge success">Concluído</span>
             <span v-else-if="phase === 1" class="badge processing">{{ prepareProgress }}%</span>
-            <span v-else class="badge pending">Pending</span>
+            <span v-else class="badge pending">Pendente</span>
           </div>
         </div>
 
         <div class="card-content">
           <p class="api-note">POST /api/simulation/prepare</p>
           <p class="description">
-            Using the graph and simulation requirement inputs, the system generates agent profiles and simulation parameters automatically.
+            Usando a rede de entidades e os requisitos de simulação, o sistema gera perfis de agentes e parâmetros automaticamente.
           </p>
 
           <!-- Profiles Stats -->
           <div v-if="profiles.length > 0" class="stats-grid">
             <div class="stat-card">
               <span class="stat-value">{{ profiles.length }}</span>
-              <span class="stat-label">Current Agents</span>
+              <span class="stat-label">Agentes Atuais</span>
             </div>
             <div class="stat-card">
               <span class="stat-value">{{ expectedTotal || '-' }}</span>
-              <span class="stat-label">Expected Total Agents</span>
+              <span class="stat-label">Total Esperado de Agentes</span>
             </div>
             <div class="stat-card">
               <span class="stat-value">{{ totalTopicsCount }}</span>
-              <span class="stat-label">Topics Linked to Real-World Seeds</span>
+              <span class="stat-label">Tópicos Vinculados a Fontes Reais</span>
             </div>
           </div>
 
           <!-- Profiles List Preview -->
           <div v-if="profiles.length > 0" class="profiles-preview">
             <div class="preview-header">
-              <span class="preview-title">Generated Agent Profiles</span>
+              <span class="preview-title">Perfis de Agentes Gerados</span>
             </div>
             <div class="profiles-list">
               <div 
@@ -94,9 +80,9 @@
                   <span class="profile-username">@{{ profile.name || `agent_${idx}` }}</span>
                 </div>
                 <div class="profile-meta">
-                  <span class="profile-profession">{{ profile.profession || 'Unknown profession' }}</span>
+                  <span class="profile-profession">{{ profile.profession || 'Profissão desconhecida' }}</span>
                 </div>
-                <p class="profile-bio">{{ profile.bio || 'No bio yet' }}</p>
+                <p class="profile-bio">{{ profile.bio || 'Sem bio ainda' }}</p>
                 <div v-if="profile.interested_topics?.length" class="profile-topics">
                   <span 
                     v-for="topic in profile.interested_topics.slice(0, 3)" 
@@ -118,19 +104,19 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">03</span>
-            <span class="step-title">Generate Dual-Platform Simulation Config</span>
+            <span class="step-title">Configurar Ambiente das Plataformas</span>
           </div>
           <div class="step-status">
-            <span v-if="phase > 2" class="badge success">Completed</span>
-            <span v-else-if="phase === 2" class="badge processing">Generating</span>
-            <span v-else class="badge pending">Pending</span>
+            <span v-if="phase > 2" class="badge success">Concluído</span>
+            <span v-else-if="phase === 2" class="badge processing">Gerando</span>
+            <span v-else class="badge pending">Pendente</span>
           </div>
         </div>
 
         <div class="card-content">
           <p class="api-note">POST /api/simulation/prepare</p>
           <p class="description">
-            LLM configures world time flow, recommendation settings, active periods, posting frequency, and event triggers based on requirements and real-world seeds.
+            O LLM configura o fluxo de tempo do mundo, configurações de recomendação, períodos ativos, frequência de postagem e gatilhos de eventos com base nos requisitos e em fontes do mundo real.
           </p>
           
           <!-- Config Preview -->
@@ -139,40 +125,40 @@
             <div class="config-block">
               <div class="config-grid">
                 <div class="config-item">
-                  <span class="config-item-label">Simulation Duration</span>
-                  <span class="config-item-value">{{ simulationConfig.time_config?.total_simulation_hours || '-' }} hours</span>
+                  <span class="config-item-label">Duração da Simulação</span>
+                  <span class="config-item-value">{{ simulationConfig.time_config?.total_simulation_hours || '-' }} horas</span>
                 </div>
                 <div class="config-item">
-                  <span class="config-item-label">Round Duration</span>
-                  <span class="config-item-value">{{ simulationConfig.time_config?.minutes_per_round || '-' }} minutes</span>
+                  <span class="config-item-label">Duração da Rodada</span>
+                  <span class="config-item-value">{{ simulationConfig.time_config?.minutes_per_round || '-' }} minutos</span>
                 </div>
                 <div class="config-item">
-                  <span class="config-item-label">Total Rounds</span>
+                  <span class="config-item-label">Total de Rodadas</span>
  <span class="config-item-value">{{ Math.floor((simulationConfig.time_config?.total_simulation_hours * 60 / simulationConfig.time_config?.minutes_per_round)) || '-' }} </span>
                 </div>
                 <div class="config-item">
-                  <span class="config-item-label">Active/Hour</span>
+                  <span class="config-item-label">Ativos/Hora</span>
                   <span class="config-item-value">{{ simulationConfig.time_config?.agents_per_hour_min }}-{{ simulationConfig.time_config?.agents_per_hour_max }}</span>
                 </div>
               </div>
               <div class="time-periods">
                 <div class="period-item">
-                  <span class="period-label">Peak Hours</span>
+                  <span class="period-label">Horário de Pico</span>
                   <span class="period-hours">{{ simulationConfig.time_config?.peak_hours?.join(':00, ') }}:00</span>
                   <span class="period-multiplier">×{{ simulationConfig.time_config?.peak_activity_multiplier }}</span>
                 </div>
                 <div class="period-item">
-                  <span class="period-label">Work Hours</span>
+                  <span class="period-label">Horário Comercial</span>
                   <span class="period-hours">{{ simulationConfig.time_config?.work_hours?.[0] }}:00-{{ simulationConfig.time_config?.work_hours?.slice(-1)[0] }}:00</span>
                   <span class="period-multiplier">×{{ simulationConfig.time_config?.work_activity_multiplier }}</span>
                 </div>
                 <div class="period-item">
-                  <span class="period-label">Morning Hours</span>
+                  <span class="period-label">Horário Matinal</span>
                   <span class="period-hours">{{ simulationConfig.time_config?.morning_hours?.[0] }}:00-{{ simulationConfig.time_config?.morning_hours?.slice(-1)[0] }}:00</span>
                   <span class="period-multiplier">×{{ simulationConfig.time_config?.morning_activity_multiplier }}</span>
                 </div>
                 <div class="period-item">
-                  <span class="period-label">Off-Peak Hours</span>
+                  <span class="period-label">Fora do Pico</span>
                   <span class="period-hours">{{ simulationConfig.time_config?.off_peak_hours?.[0] }}:00-{{ simulationConfig.time_config?.off_peak_hours?.slice(-1)[0] }}:00</span>
                   <span class="period-multiplier">×{{ simulationConfig.time_config?.off_peak_activity_multiplier }}</span>
                 </div>
@@ -182,7 +168,7 @@
             <!-- Agent Configuration -->
             <div class="config-block">
               <div class="config-block-header">
-                <span class="config-block-title">Agent Configuration</span>
+                <span class="config-block-title">Configuração de Agentes</span>
                 <span class="config-block-badge">{{ simulationConfig.agent_configs?.length || 0 }} items</span>
               </div>
               <div class="agents-cards">
@@ -194,7 +180,7 @@
                   <!-- Card Header -->
                   <div class="agent-card-header">
                     <div class="agent-identity">
-                      <span class="agent-id">Agent {{ agent.agent_id }}</span>
+                      <span class="agent-id">Agente {{ agent.agent_id }}</span>
                       <span class="agent-name">{{ agent.entity_name }}</span>
                     </div>
                     <div class="agent-tags">
@@ -205,7 +191,7 @@
                   
                   <!-- Activity Timeline -->
                   <div class="agent-timeline">
-                    <span class="timeline-label">Active periods</span>
+                    <span class="timeline-label">Períodos ativos</span>
                     <div class="mini-timeline">
                       <div 
                         v-for="hour in 24" 
@@ -267,59 +253,59 @@
             <!-- Platform Configuration -->
             <div class="config-block">
               <div class="config-block-header">
-                <span class="config-block-title">Recommendation Algorithm Config</span>
+                <span class="config-block-title">Config de Algoritmo de Recomendação</span>
               </div>
               <div class="platforms-grid">
                 <div v-if="simulationConfig.twitter_config" class="platform-card">
                   <div class="platform-card-header">
-                    <span class="platform-name">Platform 1: Square / Feed</span>
+                    <span class="platform-name">Plataforma 1: Praça / Feed</span>
                   </div>
                   <div class="platform-params">
                     <div class="param-row">
-                      <span class="param-label">Recency weight</span>
+                      <span class="param-label">Peso de recência</span>
                       <span class="param-value">{{ simulationConfig.twitter_config.recency_weight }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Popularity weight</span>
+                      <span class="param-label">Peso de popularidade</span>
                       <span class="param-value">{{ simulationConfig.twitter_config.popularity_weight }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Relevance weight</span>
+                      <span class="param-label">Peso de relevância</span>
                       <span class="param-value">{{ simulationConfig.twitter_config.relevance_weight }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Viral threshold</span>
+                      <span class="param-label">Limiar viral</span>
                       <span class="param-value">{{ simulationConfig.twitter_config.viral_threshold }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Echo-chamber intensity</span>
+                      <span class="param-label">Intensidade de câmara de eco</span>
                       <span class="param-value">{{ simulationConfig.twitter_config.echo_chamber_strength }}</span>
                     </div>
                   </div>
                 </div>
                 <div v-if="simulationConfig.reddit_config" class="platform-card">
                   <div class="platform-card-header">
-                    <span class="platform-name">Platform 2: Topics / Community</span>
+                    <span class="platform-name">Plataforma 2: Tópicos / Comunidade</span>
                   </div>
                   <div class="platform-params">
                     <div class="param-row">
-                      <span class="param-label">Recency weight</span>
+                      <span class="param-label">Peso de recência</span>
                       <span class="param-value">{{ simulationConfig.reddit_config.recency_weight }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Popularity weight</span>
+                      <span class="param-label">Peso de popularidade</span>
                       <span class="param-value">{{ simulationConfig.reddit_config.popularity_weight }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Relevance weight</span>
+                      <span class="param-label">Peso de relevância</span>
                       <span class="param-value">{{ simulationConfig.reddit_config.relevance_weight }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Viral threshold</span>
+                      <span class="param-label">Limiar viral</span>
                       <span class="param-value">{{ simulationConfig.reddit_config.viral_threshold }}</span>
                     </div>
                     <div class="param-row">
-                      <span class="param-label">Echo-chamber intensity</span>
+                      <span class="param-label">Intensidade de câmara de eco</span>
                       <span class="param-value">{{ simulationConfig.reddit_config.echo_chamber_strength }}</span>
                     </div>
                   </div>
@@ -330,7 +316,7 @@
             <!-- LLM Configuration Reasoning -->
             <div v-if="simulationConfig.generation_reasoning" class="config-block">
               <div class="config-block-header">
-                <span class="config-block-title">LLM Configuration Reasoning</span>
+                <span class="config-block-title">Raciocínio de Configuração do LLM</span>
               </div>
               <div class="reasoning-content">
                 <div 
@@ -351,19 +337,19 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">04</span>
-            <span class="step-title">Initial Activation Orchestration</span>
+            <span class="step-title">Preparação Inicial</span>
           </div>
           <div class="step-status">
-            <span v-if="phase > 3" class="badge success">Completed</span>
-            <span v-else-if="phase === 3" class="badge processing">Orchestrating</span>
-            <span v-else class="badge pending">Pending</span>
+            <span v-if="phase > 3" class="badge success">Concluído</span>
+            <span v-else-if="phase === 3" class="badge processing">Orquestrando</span>
+            <span v-else class="badge pending">Pendente</span>
           </div>
         </div>
 
         <div class="card-content">
           <p class="api-note">POST /api/simulation/prepare</p>
           <p class="description">
-            Generate initial activation events and hot topics from narrative direction to bootstrap world state.
+            Gera eventos de ativação iniciais e tópicos quentes a partir da direção narrativa para inicializar o estado do mundo.
           </p>
 
           <div v-if="simulationConfig?.event_config" class="orchestration-content">
@@ -380,14 +366,14 @@
                     </linearGradient>
                   </defs>
                 </svg>
-                Narrative direction
+                Direção narrativa
               </span>
               <p class="narrative-text">{{ simulationConfig.event_config.narrative_direction }}</p>
             </div>
 
             <!-- Trending Topics -->
             <div class="topics-section">
-              <span class="box-label">Initial hot topics</span>
+              <span class="box-label">Tópicos quentes iniciais</span>
               <div class="hot-topics-grid">
                 <span v-for="topic in simulationConfig.event_config.hot_topics" :key="topic" class="hot-topic-tag">
                   # {{ topic }}
@@ -397,7 +383,7 @@
 
             <!-- Initial Post Stream -->
             <div class="initial-posts-section">
-              <span class="box-label">Initial activation sequence ({{ simulationConfig.event_config.initial_posts.length }})</span>
+              <span class="box-label">Sequência de ativação inicial ({{ simulationConfig.event_config.initial_posts.length }})</span>
               <div class="posts-timeline">
                 <div v-for="(post, idx) in simulationConfig.event_config.initial_posts" :key="idx" class="timeline-item">
                   <div class="timeline-marker"></div>
@@ -405,7 +391,7 @@
                     <div class="post-header">
                       <span class="post-role">{{ post.poster_type }}</span>
                       <span class="post-agent-info">
-                        <span class="post-id">Agent {{ post.poster_agent_id }}</span>
+                        <span class="post-id">Agente {{ post.poster_agent_id }}</span>
                         <span class="post-username">@{{ getAgentUsername(post.poster_agent_id) }}</span>
                       </span>
                     </div>
@@ -423,29 +409,29 @@
         <div class="card-header">
           <div class="step-info">
             <span class="step-num">05</span>
-            <span class="step-title">Ready</span>
+            <span class="step-title">Pronto</span>
           </div>
           <div class="step-status">
-            <span v-if="phase >= 4" class="badge processing">In Progress</span>
-            <span v-else class="badge pending">Pending</span>
+            <span v-if="phase >= 4" class="badge processing">Em Andamento</span>
+            <span v-else class="badge pending">Pendente</span>
           </div>
         </div>
 
         <div class="card-content">
           <p class="api-note">POST /api/simulation/start</p>
-          <p class="description">Simulation environment is ready. You can start running simulations.</p>
+          <p class="description">O ambiente de simulação está pronto. Você pode iniciar as simulações.</p>
           
           <!-- Simulation rounds configuration - shown after config generation and round calculation -->
           <div v-if="simulationConfig && autoGeneratedRounds" class="rounds-config-section">
             <div class="rounds-header">
               <div class="header-left">
-                <span class="section-title">Simulation round setting</span>
-                <span class="section-desc">KephalosData automatically plans real-world simulation for <span class="desc-highlight">{{ simulationConfig?.time_config?.total_simulation_hours || '-' }}</span> hours, each round represents <span class="desc-highlight">{{ simulationConfig?.time_config?.minutes_per_round || '-' }}</span> minutes of real-time progression</span>
+                <span class="section-title">Configuração de rodadas</span>
+                <span class="section-desc">O KephalosData planeja automaticamente uma simulação de <span class="desc-highlight">{{ simulationConfig?.time_config?.total_simulation_hours || '-' }}</span> horas; cada rodada representa <span class="desc-highlight">{{ simulationConfig?.time_config?.minutes_per_round || '-' }}</span> minutos de progressão em tempo real</span>
               </div>
               <label class="switch-control">
                 <input type="checkbox" v-model="useCustomRounds">
                 <span class="switch-track"></span>
-                <span class="switch-label">Custom</span>
+                <span class="switch-label">Personalizado</span>
               </label>
             </div>
             
@@ -457,7 +443,7 @@
  <span class="val-unit"></span>
                   </div>
                   <div class="slider-meta-info">
-                    <span>If agent count is 100: estimated time about {{ Math.round(customMaxRounds * 0.6) }} minutes</span>
+                    <span>Com 100 agentes: tempo estimado de {{ Math.round(customMaxRounds * 0.6) }} minutos</span>
                   </div>
                 </div>
 
@@ -478,7 +464,7 @@
                       :class="{ active: customMaxRounds === 40 }"
                       @click="customMaxRounds = 40"
                       :style="{ position: 'absolute', left: `calc(${(40 - 10) / (autoGeneratedRounds - 10) * 100}% - 30px)` }"
-                    >40 (recommended)</span>
+                    >40 (recomendado)</span>
                     <span>{{ autoGeneratedRounds }}</span>
                   </div>
                 </div>
@@ -497,11 +483,11 @@
                           <circle cx="12" cy="12" r="10"></circle>
                           <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
-                        If agent count is 100: estimated time {{ Math.round(autoGeneratedRounds * 0.6) }} minutes
+                        Com 100 agentes: tempo estimado de {{ Math.round(autoGeneratedRounds * 0.6) }} minutos
                       </span>
                     </div>
                     <div class="auto-desc">
- <p class="highlight-tip" @click="useCustomRounds = true">，‘Custom’， ➝</p>
+                    <p class="highlight-tip" @click="useCustomRounds = true">Personalizar número de rodadas ➝</p>
                     </div>
                   </div>
                 </div>
@@ -514,14 +500,14 @@
               class="action-btn secondary"
               @click="$emit('go-back')"
             >
- ← Graph Build
+              ← Mapear Cenário
             </button>
-            <button 
+            <button
               class="action-btn primary"
               :disabled="phase < 4"
               @click="handleStartSimulation"
             >
-              Start Dual-World Parallel Simulation ➝
+              Iniciar Simulação ➝
             </button>
           </div>
         </div>
@@ -547,32 +533,32 @@
           <!-- Basic Information -->
           <div class="modal-info-grid">
             <div class="info-item">
-              <span class="info-label">Exposed Age</span>
-              <span class="info-value">{{ selectedProfile.age || '-' }} years</span>
+              <span class="info-label">Idade</span>
+              <span class="info-value">{{ selectedProfile.age || '-' }} anos</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Exposed Gender</span>
-              <span class="info-value">{{ { male: 'Male', female: 'Female', other: 'Other' }[selectedProfile.gender] || selectedProfile.gender }}</span>
+              <span class="info-label">Gênero</span>
+              <span class="info-value">{{ { male: 'Masculino', female: 'Feminino', other: 'Outro' }[selectedProfile.gender] || selectedProfile.gender }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Country/Region</span>
+              <span class="info-label">País/Região</span>
               <span class="info-value">{{ selectedProfile.country || '-' }}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Exposed MBTI</span>
+              <span class="info-label">MBTI</span>
               <span class="info-value mbti">{{ selectedProfile.mbti || '-' }}</span>
             </div>
           </div>
 
           <!-- Profile -->
           <div class="modal-section">
-            <span class="section-label">Profile</span>
-            <p class="section-bio">{{ selectedProfile.bio || 'No bio yet' }}</p>
+            <span class="section-label">Perfil</span>
+            <p class="section-bio">{{ selectedProfile.bio || 'Sem bio ainda' }}</p>
           </div>
 
           <!-- Followed Topics -->
           <div class="modal-section" v-if="selectedProfile.interested_topics?.length">
-            <span class="section-label">Topics linked to real-world seeds</span>
+            <span class="section-label">Tópicos vinculados a fontes reais</span>
             <div class="topics-grid">
               <span 
                 v-for="topic in selectedProfile.interested_topics" 
@@ -584,25 +570,25 @@
 
           <!-- Detailed Persona -->
           <div class="modal-section" v-if="selectedProfile.persona">
-            <span class="section-label">Detailed profile background</span>
+            <span class="section-label">Histórico detalhado do perfil</span>
             
             <!-- Persona Dimension Overview -->
             <div class="persona-dimensions">
               <div class="dimension-card">
-                <span class="dim-title">Event panoramic experience</span>
-                <span class="dim-desc">Complete behavioral trajectory in this event</span>
+                <span class="dim-title">Experiência panorâmica do evento</span>
+                <span class="dim-desc">Trajetória comportamental completa neste evento</span>
               </div>
               <div class="dimension-card">
-                <span class="dim-title">Behavioral pattern profile</span>
-                <span class="dim-desc">Experience summary and behavioral style preference</span>
+                <span class="dim-title">Perfil de padrão comportamental</span>
+                <span class="dim-desc">Resumo de experiências e preferência de estilo comportamental</span>
               </div>
               <div class="dimension-card">
-                <span class="dim-title">Unique memory imprints</span>
-                <span class="dim-desc">Memory formed from real-world seeds</span>
+                <span class="dim-title">Impressões de memória únicas</span>
+                <span class="dim-desc">Memória formada a partir de fontes do mundo real</span>
               </div>
               <div class="dimension-card">
-                <span class="dim-title">Social relationship network</span>
- <span class="dim-desc">items</span>
+                <span class="dim-title">Rede de relacionamentos sociais</span>
+                <span class="dim-desc">itens</span>
               </div>
             </div>
 
@@ -732,10 +718,9 @@ const handleStartSimulation = () => {
   if (useCustomRounds.value) {
  // Custom， max_rounds 
     params.maxRounds = customMaxRounds.value
- addLog(`Start Simulation，Custom: ${customMaxRounds.value} `)
+    addLog(`Iniciando simulação com ${customMaxRounds.value} rodadas (personalizado)`)
   } else {
- // ， max_rounds 
- addLog(`Start Simulation，: ${autoGeneratedRounds.value} `)
+    addLog(`Iniciando simulação com ${autoGeneratedRounds.value} rodadas (automático)`)
   }
   
   emit('next-step', params)
@@ -995,7 +980,7 @@ const fetchConfigRealtime = async () => {
         
         stopConfigPolling()
         phase.value = 4
- addLog('✓ Environment Setup，Start Simulation')
+        addLog('✓ Ambiente configurado — pronto para iniciar')
         emit('update-status', 'completed')
       }
     }
@@ -1027,7 +1012,7 @@ const loadPreparedData = async () => {
  addLog(` └─ : ${res.data.summary.initial_posts_count}`)
         }
         
- addLog('✓ Environment Setup，Start Simulation')
+        addLog('✓ Ambiente configurado — pronto para iniciar')
         phase.value = 4
         emit('update-status', 'completed')
       } else {
@@ -1072,7 +1057,7 @@ onUnmounted(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #080808;
+  background: var(--bg);
   font-family: 'Roboto Mono', 'JetBrains Mono', monospace;
 }
 
@@ -1083,6 +1068,13 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+@media (max-width: 767px) {
+  .scroll-container { padding: 16px; gap: 14px; }
+  .step-card { padding: 14px; }
+  .nav-actions { padding: 12px 16px; gap: 8px; flex-direction: column; }
+  .nav-btn { width: 100%; justify-content: center; }
 }
 
 /* Step Card */
@@ -1131,6 +1123,7 @@ onUnmounted(() => {
   font-size: 14px;
   letter-spacing: 0.5px;
   color: rgba(255,255,255,0.5);
+  font-family: var(--font);
 }
 
 .step-card.active .step-title {
@@ -1223,6 +1216,27 @@ onUnmounted(() => {
 
 .action-group.dual .action-btn {
   width: 100%;
+}
+
+/* Info Card Compact */
+.info-card-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  padding: 6px 12px;
+  background: rgba(189,235,181,0.08);
+  border: 1px solid rgba(189,235,181,0.2);
+  border-radius: 6px;
+}
+.info-compact-label {
+  font-size: 11px;
+  color: #BDEBB5;
+}
+.info-compact-id {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
 }
 
 /* Info Card */
@@ -1529,9 +1543,9 @@ onUnmounted(() => {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   font-weight: 600;
-  color: #818CF8;
-  background: rgba(99,102,241,0.1);
-  border: 1px solid rgba(99,102,241,0.2);
+  color: #BDEBB5;
+  background: rgba(189,235,181,0.1);
+  border: 1px solid rgba(189,235,181,0.22);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -1674,7 +1688,7 @@ onUnmounted(() => {
 }
 
 .timeline-hour.active {
-  background: linear-gradient(180deg, #6366F1, #818CF8);
+  background: linear-gradient(180deg, #3ecf59, #76FB91);
 }
 
 .timeline-marks {

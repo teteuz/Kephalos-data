@@ -2,28 +2,29 @@
   <div class="mv">
     <header class="mv-header">
       <div class="mv-header-left">
-        <img
-          src="/kephalos-logo.png"
-          alt="KEPHALOS"
-          class="mv-logo"
-          @click="router.push('/')"
-        />
-      </div>
-
-      <div class="mv-header-center">
+        <AppLogo class="mv-logo" @click="router.push('/')" style="cursor:pointer" />
       </div>
 
       <div class="mv-header-right">
-        <span class="mv-step-tag">
-          <span class="mv-step-n">{{ currentStep }}/5</span>
-          {{ stepNames[currentStep - 1] }}
-        </span>
-        <span class="mv-sep"></span>
         <span class="mv-status" :class="statusClass">
           <span class="mv-dot"></span>{{ statusText }}
         </span>
       </div>
     </header>
+
+    <!-- Floating step progress pill -->
+    <div class="mv-step-float">
+      <div
+        v-for="(name, i) in stepNames"
+        :key="i"
+        class="mv-sf-step"
+        :class="{ active: currentStep === i+1, done: currentStep > i+1 }"
+        :title="name"
+      >
+        <span class="mv-sf-num">{{ String(i+1).padStart(2,'0') }}</span>
+        <span v-if="i < stepNames.length - 1" class="mv-sf-line"></span>
+      </div>
+    </div>
 
     <main class="mv-content">
       <div class="mv-panel left" :style="leftPanelStyle">
@@ -41,8 +42,9 @@
         @click="panelExpanded = true"
       >
         <div v-if="!panelExpanded" class="mv-float-tab">
-          <div class="mv-tab-icon">◆</div>
-          <div class="mv-tab-text">WORKBENCH</div>
+          <div class="mv-tab-step-num">{{ String(currentStep).padStart(2,'0') }}</div>
+          <div class="mv-tab-name">{{ stepNames[currentStep-1] }}</div>
+          <div class="mv-tab-expand">ABRIR ↑</div>
         </div>
         <div v-else class="mv-panel-content">
           <button 
@@ -81,6 +83,7 @@ import { useRoute, useRouter } from 'vue-router'
 import GraphPanel from '../components/GraphPanel.vue'
 import Step1GraphBuild from '../components/Step1GraphBuild.vue'
 import Step2EnvSetup from '../components/Step2EnvSetup.vue'
+import AppLogo from '../components/AppLogo.vue'
 import { generateOntology, getProject, buildGraph, getTaskStatus, getGraphData } from '../api/graph'
 import { getPendingUpload, clearPendingUpload } from '../store/pendingUpload'
 
@@ -88,7 +91,7 @@ const route = useRoute()
 const router = useRouter()
 const panelExpanded = ref(false)
 const currentStep = ref(1)
-const stepNames = ['Graph Build', 'Environment Setup', 'Start Simulation', 'Report Generation', 'Deep Interaction']
+const stepNames = ['Mapear Cenário', 'Configurar Ambiente', 'Iniciar Simulação', 'Gerar Relatório', 'Interação Profunda']
 const currentProjectId = ref(route.params.projectId)
 const loading = ref(false)
 const graphLoading = ref(false)
@@ -113,11 +116,11 @@ const rightPanelStyle = computed(() => {
 })
 const statusClass = computed(() => error.value ? 'err' : currentPhase.value >= 2 ? 'ok' : 'proc')
 const statusText = computed(() => {
-  if (error.value) return 'Error'
-  if (currentPhase.value >= 2) return 'Ready'
-  if (currentPhase.value === 1) return 'Building Graph'
-  if (currentPhase.value === 0) return 'Analyzing'
-  return 'Initializing'
+  if (error.value) return 'Erro'
+  if (currentPhase.value >= 2) return 'Pronto'
+  if (currentPhase.value === 1) return 'Mapeando Rede'
+  if (currentPhase.value === 0) return 'Analisando'
+  return 'Inicializando'
 })
 
 const addLog = (msg) => {
@@ -142,13 +145,15 @@ const initProject = async () => {
 }
 const handleNewProject = async () => {
   const pending = getPendingUpload()
-  if (!pending.isPending || !pending.files.length) { error.value = 'No pending files.'; return }
+  if (!pending.isPending) { error.value = 'No pending simulation data.'; return }
   try {
     loading.value = true; currentPhase.value = 0
     ontologyProgress.value = { message: 'Uploading and analyzing...' }
     addLog('Starting ontology generation...')
     const fd = new FormData()
-    pending.files.forEach(f => fd.append('files', f))
+    if (pending.files && pending.files.length > 0) {
+      pending.files.forEach(f => fd.append('files', f))
+    }
     fd.append('simulation_requirement', pending.simulationRequirement)
     const res = await generateOntology(fd)
     if (res.success) {
@@ -235,155 +240,148 @@ onUnmounted(() => { stopPolling(); stopGraphPolling() })
 <style scoped>
 .mv {
   height: 100vh; display: flex; flex-direction: column;
-  background: #080808; overflow: hidden;
-  font-family: 'Roboto Mono', 'JetBrains Mono', monospace;
+  background: var(--bg); overflow: hidden;
+  font-family: var(--font);
 }
 
+/* ── HEADER ── */
 .mv-header {
   flex-shrink: 0; height: 52px;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-  background: rgba(8,8,8,0.97);
+  border-bottom: 1px solid var(--border);
+  background: var(--nav-bg); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 24px; position: relative; z-index: 10;
 }
-
 .mv-logo {
-  height: 40px; width: auto; cursor: pointer; display: block;
+  height: 32px; width: auto; display: block;
   opacity: 0.9; transition: opacity 0.12s;
 }
 .mv-logo:hover { opacity: 1; }
-
-.mv-header-center { position: absolute; left: 50%; transform: translateX(-50%); }
-
 .mv-header-right { display: flex; align-items: center; gap: 14px; }
-
-.mv-step-tag {
-  font-family: 'Roboto Mono', monospace; font-size: 0.7rem;
-  color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 8px;
-}
-.mv-step-n { color: rgba(255,255,255,0.2); }
-
-.mv-sep { width: 1px; height: 14px; background: rgba(255,255,255,0.08); }
 
 .mv-status {
   display: flex; align-items: center; gap: 6px;
-  font-family: 'Roboto Mono', monospace; font-size: 0.66rem;
-  color: rgba(255,255,255,0.35); letter-spacing: 0.06em;
+  font-family: var(--mono); font-size: 0.64rem;
+  color: var(--text2); letter-spacing: 0.06em;
 }
-.mv-dot { width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+.mv-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text3); }
 .mv-status.proc .mv-dot { background: #3b82f6; animation: blink 1.2s infinite; }
-.mv-status.ok .mv-dot { background: #BDEBB5; }
-.mv-status.err .mv-dot { background: #ef4444; }
+.mv-status.ok .mv-dot { background: var(--green); }
+.mv-status.err .mv-dot { background: var(--red); }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-.mv-content { flex: 1; display: flex; overflow: hidden; }
+/* ── FLOATING STEP PROGRESS PILL ── */
+.mv-step-float {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  background: var(--bg2);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  border: 1px solid var(--border2);
+  border-radius: 10px;
+  box-shadow: var(--shadow-md);
+  padding: 10px 16px;
+  gap: 0;
+  pointer-events: none;
+}
+.mv-sf-step { display: flex; align-items: center; gap: 0; }
+.mv-sf-num {
+  font-size: 0.58rem; font-weight: 700; letter-spacing: 0.1em;
+  color: var(--text3);
+  padding: 2px 6px; border-radius: 3px;
+  transition: all 0.2s;
+}
+.mv-sf-step.done .mv-sf-num { color: var(--green-text); opacity: 0.55; }
+.mv-sf-step.active .mv-sf-num {
+  color: var(--green-text);
+  background: var(--green-dim);
+  border: 1px solid var(--green-border);
+}
+.mv-sf-line {
+  display: inline-block;
+  width: 18px; height: 1px;
+  background: var(--border);
+  margin: 0 2px;
+}
+.mv-sf-step.done .mv-sf-line { background: var(--green-border); opacity: 0.5; }
 
+/* ── CONTENT LAYOUT ── */
+.mv-content { flex: 1; display: flex; overflow: hidden; }
 .mv-panel {
   height: 100%; overflow: hidden;
-  transition: width 0.4s cubic-bezier(0.25,0.8,0.25,1), opacity 0.3s;
+  transition: width 0.35s cubic-bezier(0.25,0.8,0.25,1);
 }
-.mv-panel.left { border-right: 1px solid rgba(255,255,255,0.06); }
+.mv-panel.left { border-right: 1px solid var(--border); }
 
-/* Floating Panel Styles */
+/* Floating workbench tab */
 .mv-panel.right.floating {
   position: fixed !important;
-  bottom: 20px !important;
-  right: 20px !important;
-  width: 240px !important;
-  height: auto !important;
+  bottom: 20px !important; right: 20px !important;
+  width: 200px !important; height: auto !important;
   z-index: 50 !important;
-  border-radius: 12px;
-  background: rgba(8, 8, 8, 0.4) !important;
-  backdrop-filter: blur(10px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-  overflow: hidden;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border-radius: 10px;
+  background: var(--bg2) !important;
+  backdrop-filter: blur(14px) saturate(180%);
+  border: 1px solid var(--border2);
+  box-shadow: var(--shadow-md);
+  overflow: hidden; cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.25,0.8,0.25,1);
 }
-
 .mv-panel.right.floating:hover {
-  background: rgba(8, 8, 8, 0.5) !important;
-  border-color: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+  border-color: var(--green-border);
+  transform: translateY(-2px);
 }
-
 .mv-float-tab {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 16px 12px;
-  gap: 8px;
-  width: 100%;
-  height: 100%;
+  display: flex; flex-direction: column;
+  align-items: flex-start;
+  padding: 14px 16px; gap: 3px;
+  width: 100%; height: 100%;
 }
-
-.mv-tab-icon {
-  font-size: 20px;
-  color: rgba(255, 255, 255, 0.6);
-  transition: all 0.3s ease;
+.mv-tab-step-num {
+  font-size: 1.1rem; font-weight: 700;
+  color: var(--text3);
+  line-height: 1;
 }
-
-.mv-float-tab:hover .mv-tab-icon {
-  color: rgba(255, 255, 255, 0.9);
-  transform: translateY(2px);
+.mv-tab-name {
+  font-size: 0.7rem; font-weight: 600;
+  color: var(--text);
+  letter-spacing: 0.02em;
+  line-height: 1.3;
 }
-
-.mv-tab-text {
-  font-size: 0.65rem;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  color: rgba(255, 255, 255, 0.5);
-  text-align: center;
-  transition: color 0.3s ease;
+.mv-tab-expand {
+  font-size: 0.58rem; font-weight: 700;
+  color: var(--green-text); opacity: 0.6;
+  letter-spacing: 0.1em;
+  margin-top: 4px;
 }
+.mv-panel.right.floating:hover .mv-tab-expand { opacity: 1; }
+.mv-panel.right.floating:hover .mv-tab-step-num { color: var(--text2); }
 
-.mv-float-tab:hover .mv-tab-text {
-  color: rgba(255, 255, 255, 0.8);
-}
-
+/* Expanded workbench panel */
 .mv-panel.right.expanded {
   position: static !important;
-  width: 100% !important;
-  height: 100% !important;
-  background: #080808 !important;
-  backdrop-filter: none;
-  border: none;
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
-  box-shadow: none;
-  border-radius: 0;
+  width: 420px !important; min-width: 380px; height: 100% !important;
+  background: var(--bg) !important; backdrop-filter: none;
+  border: none; border-left: 1px solid var(--border);
+  box-shadow: none; border-radius: 0; overflow: hidden;
+  flex-shrink: 0;
 }
-
-.mv-panel-content {
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  position: relative;
-}
-
+.mv-panel-content { width: 100%; height: 100%; overflow: hidden; position: relative; }
 .mv-close-panel {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 28px;
-  height: 28px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 18px;
-  cursor: pointer;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 100;
-  transition: all 0.2s ease;
+  position: absolute; top: 12px; right: 12px;
+  width: 26px; height: 26px;
+  background: var(--surface-1); border: 1px solid var(--border2);
+  color: var(--text2); font-size: 16px; cursor: pointer;
+  border-radius: 5px; display: flex; align-items: center; justify-content: center;
+  z-index: 100; transition: all 0.15s ease;
 }
-
 .mv-close-panel:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.4);
-  color: rgba(255, 255, 255, 0.9);
+  background: var(--surface-2);
+  border-color: var(--text2); color: var(--text);
 }
 </style>

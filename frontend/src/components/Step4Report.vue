@@ -129,7 +129,7 @@
 
  <!-- Next Step Button - -->
           <button v-if="isComplete" class="next-step-btn" @click="goToInteraction">
-            <span>Enter Deep Interaction</span>
+            <span>Interagir com a Simulação</span>
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <line x1="5" y1="12" x2="19" y2="12"></line>
               <polyline points="12 5 19 12 12 19"></polyline>
@@ -2368,13 +2368,15 @@ watch(() => props.reportId, (newId) => {
 }
 
 .report-tag {
-  background: #000000;
-  color: #FFFFFF;
+  background: var(--green-dim);
+  color: var(--green-text);
   font-size: 11px;
   font-weight: 700;
   padding: 4px 8px;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  border: 1px solid var(--green-border);
+  border-radius: 4px;
 }
 
 .report-id {
@@ -3830,8 +3832,8 @@ watch(() => props.reportId, (newId) => {
 }
 
 :deep(.interview-display .agent-tab.active .tab-avatar) {
-  background: #6366F1;
-  color: #FFFFFF;
+  background: #3ecf59;
+  color: #000000;
 }
 
 :deep(.interview-display .tab-name) {
