@@ -6,7 +6,7 @@
       <div class="pricing-header">
         <span class="k-label">PLANOS</span>
         <h1 class="pricing-title">Simples e transparente</h1>
-        <p class="pricing-sub">Simulações ilimitadas. Cancele quando quiser.</p>
+        <p class="pricing-sub">Até 30 simulações por mês. Cancele quando quiser.</p>
       </div>
 
       <div class="plans-grid">
@@ -27,7 +27,7 @@
           <div class="plan-price"><span class="plan-amount">R$34,99</span>/mês</div>
           <div class="plan-desc">Acesso completo para indivíduos e pequenas equipes.</div>
           <ul class="plan-features plan-features-pro">
-            <li>Simulações ilimitadas</li>
+            <li>30 simulações / mês</li>
             <li>Agentes ilimitados</li>
             <li>Suíte completa de relatórios</li>
             <li>Modo de interação</li>

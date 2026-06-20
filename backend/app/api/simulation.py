@@ -21,6 +21,7 @@ from ..models.project import ProjectManager
 logger = get_logger('kephalosdata.api.simulation')
 
 FREE_SIMULATION_LIMIT = 2
+PRO_SIMULATION_LIMIT = 30
 
 
 # ── Quota helpers ──────────────────────────────────────────────────────────────
@@ -250,16 +251,19 @@ def create_simulation():
     """
     # ── Quota check ────────────────────────────────────────────────────────────
     user_id = _get_user_id_from_request()
-    if user_id and not _is_pro_user(user_id):
+    if user_id:
+        is_pro = _is_pro_user(user_id)
+        limit = PRO_SIMULATION_LIMIT if is_pro else FREE_SIMULATION_LIMIT
         used = _count_monthly_simulations(user_id)
-        if used >= FREE_SIMULATION_LIMIT:
+        if used >= limit:
+            plan = "pro" if is_pro else "free"
             return jsonify({
                 "success": False,
-                "error": f"Limite de {FREE_SIMULATION_LIMIT} simulações/mês atingido no plano Gratuito. Faça upgrade para Pro.",
+                "error": f"Limite de {limit} simulações/mês atingido no plano {'Pro' if is_pro else 'Gratuito'}. {'Aguarde o próximo mês.' if is_pro else 'Faça upgrade para Pro.'}",
                 "limit_reached": True,
-                "plan": "free",
+                "plan": plan,
                 "used": used,
-                "limit": FREE_SIMULATION_LIMIT,
+                "limit": limit,
             }), 403
     # ───────────────────────────────────────────────────────────────────────────
 
