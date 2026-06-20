@@ -43,35 +43,35 @@ const routes = [
     name: 'Process',
     component: MainView,
     props: true,
-    meta: { requiresAuth: true, requiresSubscription: true }
+    meta: { requiresAuth: true }
   },
   {
     path: '/simulation/:simulationId',
     name: 'Simulation',
     component: SimulationView,
     props: true,
-    meta: { requiresAuth: true, requiresSubscription: true }
+    meta: { requiresAuth: true }
   },
   {
     path: '/simulation/:simulationId/start',
     name: 'SimulationRun',
     component: SimulationRunView,
     props: true,
-    meta: { requiresAuth: true, requiresSubscription: true }
+    meta: { requiresAuth: true }
   },
   {
     path: '/report/:reportId',
     name: 'Report',
     component: ReportView,
     props: true,
-    meta: { requiresAuth: true, requiresSubscription: true }
+    meta: { requiresAuth: true }
   },
   {
     path: '/interaction/:reportId',
     name: 'Interaction',
     component: InteractionView,
     props: true,
-    meta: { requiresAuth: true, requiresSubscription: true }
+    meta: { requiresAuth: true }
   }
 ]
 
