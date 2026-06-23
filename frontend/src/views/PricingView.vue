@@ -6,7 +6,7 @@
       <div class="pricing-header">
         <span class="k-label">PLANOS</span>
         <h1 class="pricing-title">Simples e transparente</h1>
-        <p class="pricing-sub">Até 30 simulações por mês. Cancele quando quiser.</p>
+        <p class="pricing-sub">Até 50 simulações por mês. Cancele quando quiser.</p>
       </div>
 
       <div class="plans-grid">
@@ -15,7 +15,7 @@
           <div class="plan-price"><span class="plan-amount">R$0</span>/mês</div>
           <div class="plan-desc">Explore a plataforma com execuções limitadas.</div>
           <ul class="plan-features">
-            <li>2 simulações / mês</li>
+            <li>5 simulações / mês</li>
             <li>Até 50 agentes</li>
             <li>Relatórios básicos</li>
           </ul>
@@ -24,10 +24,10 @@
 
         <div class="plan-card plan-card-featured">
           <div class="plan-badge plan-badge-green">PRO</div>
-          <div class="plan-price"><span class="plan-amount">R$34,99</span>/mês</div>
+          <div class="plan-price"><span class="plan-amount">R$49,99</span>/mês</div>
           <div class="plan-desc">Acesso completo para indivíduos e pequenas equipes.</div>
           <ul class="plan-features plan-features-pro">
-            <li>30 simulações / mês</li>
+            <li>50 simulações / mês</li>
             <li>Agentes ilimitados</li>
             <li>Suíte completa de relatórios</li>
             <li>Modo de interação</li>
@@ -35,12 +35,13 @@
           </ul>
           <button
             class="plan-btn plan-btn-primary"
-            :disabled="loadingSub || (isSubscribed && planName === 'Pro')"
+            :disabled="checkoutLoading || loadingSubscription || (isSubscribed && planName === 'Pro')"
             @click="handleSubscribe(PRICE_PRO)"
           >
-            <span v-if="loadingSub" class="spinner"></span>
+            <span v-if="checkoutLoading" class="spinner"></span>
+            <span v-else-if="loadingSubscription" class="spinner"></span>
             <span v-else-if="isSubscribed && planName === 'Pro'">Plano atual</span>
-            <span v-else>Assinar — R$34,99/mês</span>
+            <span v-else>Assinar — R$49,99/mês</span>
           </button>
         </div>
       </div>
@@ -59,16 +60,24 @@
 import { ref, onMounted } from 'vue'
 import { useAuth } from '../composables/useAuth'
 import { useSubscription } from '../composables/useSubscription'
+import service from '../api/index'
 import NavBar from '../components/NavBar.vue'
 
 const PRICE_PRO = import.meta.env.VITE_STRIPE_PRICE_PRO
 
 const { isAuthenticated } = useAuth()
-const { isSubscribed, planName, loadingSubscription: loadingSub, fetchSubscription, subscribe, manageSubscription } = useSubscription()
+const { isSubscribed, planName, loadingSubscription, fetchSubscription, subscribe, manageSubscription } = useSubscription()
 
+const checkoutLoading = ref(false)
 const checkoutError = ref('')
 
-onMounted(fetchSubscription)
+const loadingSub = ref(false)
+
+onMounted(async () => {
+  // Acorda o backend silenciosamente enquanto o usuário lê a página
+  service.get('/api/health').catch(() => {})
+  await fetchSubscription()
+})
 
 async function handleSubscribe(priceId) {
   checkoutError.value = ''
@@ -78,11 +87,14 @@ async function handleSubscribe(priceId) {
     return
   }
 
+  checkoutLoading.value = true
   try {
     await subscribe(priceId)
   } catch (err) {
     checkoutError.value = err.message || 'Erro ao iniciar checkout. Tente novamente.'
     console.error('Checkout error:', err)
+  } finally {
+    checkoutLoading.value = false
   }
 }
 </script>

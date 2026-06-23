@@ -83,6 +83,19 @@
 
               <div class="anav-div"></div>
 
+              <button class="anav-item" @click="toggleTheme">
+                <svg viewBox="0 0 16 16" width="13" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="8" cy="8" r="4"/>
+                  <line x1="8" y1="1" x2="8" y2="3"/><line x1="8" y1="13" x2="8" y2="15"/>
+                  <line x1="1" y1="8" x2="3" y2="8"/><line x1="13" y1="8" x2="15" y2="8"/>
+                  <line x1="2.9" y1="2.9" x2="4.3" y2="4.3"/><line x1="11.7" y1="11.7" x2="13.1" y2="13.1"/>
+                  <line x1="2.9" y1="13.1" x2="4.3" y2="11.7"/><line x1="11.7" y1="4.3" x2="13.1" y2="2.9"/>
+                </svg>
+                {{ isDark ? 'Modo Claro' : 'Modo Escuro' }}
+              </button>
+
+              <div class="anav-div"></div>
+
               <button class="anav-item anav-danger" @click="handleSignOut">
                 <svg viewBox="0 0 16 16" width="13" fill="none" stroke="currentColor" stroke-width="1.8">
                   <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/>
@@ -103,6 +116,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuth } from '../composables/useAuth'
 import { useSubscription } from '../composables/useSubscription'
+import { useTheme } from '../composables/useTheme'
 import AppLogo from './AppLogo.vue'
 
 const vClickOutside = {
@@ -118,6 +132,7 @@ const open = ref(false)
 
 const { userEmail, isAuthenticated, signOut } = useAuth()
 const { isSubscribed, planName, loadingSubscription, fetchSubscription } = useSubscription()
+const { isDark, toggleTheme } = useTheme()
 
 onMounted(fetchSubscription)
 

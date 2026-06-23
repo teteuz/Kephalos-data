@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div class="main-view">
     <!-- Header -->
     <header class="app-header">
@@ -6,14 +6,15 @@
         <AppLogo class="mv-logo" @click="router.push('/')" style="cursor:pointer" />
       </div>
 
-      <div class="header-center"></div>
+      <div class="header-center">
+        <span class="mv-crumb">
+          <span class="mv-crumb-project">{{ projectData?.project_name || 'Simulação' }}</span>
+          <span class="mv-crumb-sep">/</span>
+          <span class="mv-crumb-step">Configurar Ambiente</span>
+        </span>
+      </div>
 
       <div class="header-right">
-        <span class="mv-step-tag">
-          <span class="mv-step-n">2/5</span>
-          Configurar Ambiente
-        </span>
-        <span class="mv-sep"></span>
         <span class="mv-status" :class="statusClass">
           <span class="mv-dot"></span>{{ statusText }}
         </span>
@@ -22,28 +23,8 @@
 
     <!-- Main Content Area -->
     <main class="mv-content">
-      <div class="mv-panel left" :style="leftPanelStyle">
-        <GraphPanel
-          :graphData="graphData"
-          :loading="graphLoading"
-          :currentPhase="2"
-          :agentProfiles="agentProfiles"
-          @refresh="refreshGraph"
-        />
-      </div>
-
-      <div
-        class="mv-panel right"
-        :class="{ floating: !panelExpanded, expanded: panelExpanded }"
-        :style="rightPanelStyle"
-        @click="panelExpanded = true"
-      >
-        <div v-if="!panelExpanded" class="mv-float-tab">
-          <div class="mv-tab-icon">◆</div>
-          <div class="mv-tab-text">WORKBENCH</div>
-        </div>
-        <div v-else class="mv-panel-content">
-          <button class="mv-close-panel" @click.stop="panelExpanded = false" title="Collapse to floating tab">×</button>
+      <div class="mv-panel console">
+        <div class="mv-panel-content">
           <Step2EnvSetup
             :simulationId="currentSimulationId"
             :projectData="projectData"
@@ -55,6 +36,15 @@
             @update-status="updateStatus"
           />
         </div>
+      </div>
+      <div class="mv-panel canvas">
+        <GraphPanel
+          :graphData="graphData"
+          :loading="graphLoading"
+          :currentPhase="2"
+          :agentProfiles="agentProfiles"
+          @refresh="refreshGraph"
+        />
       </div>
     </main>
   </div>
@@ -78,7 +68,6 @@ const props = defineProps({
 })
 
 // Layout State
-const panelExpanded = ref(false)
 const isMobileView = ref(false)
 const handleViewResize = () => { isMobileView.value = window.innerWidth < 768 }
 
@@ -91,21 +80,6 @@ const agentProfiles = ref([])
 const systemLogs = ref([])
 const currentStatus = ref('processing') // processing | completed | error
 
-// --- Computed Layout Styles ---
-const leftPanelStyle = computed(() => {
-  if (panelExpanded.value && !isMobileView.value) return { flex: '1', minWidth: '0' }
-  return { width: '100%' }
-})
-
-const rightPanelStyle = computed(() => {
-  if (!panelExpanded.value) {
-    return { position: 'fixed', bottom: '20px', right: '20px', width: '200px', height: 'auto', zIndex: 50 }
-  }
-  if (isMobileView.value) {
-    return { position: 'fixed', top: '52px', left: '0', bottom: '0', right: '0', width: '100%', zIndex: 200 }
-  }
-  return { width: '420px', flexShrink: '0', position: 'static', height: '100%' }
-})
 
 // --- Status Computed ---
 const statusClass = computed(() => {
@@ -132,7 +106,7 @@ const updateStatus = (status) => {
 }
 
 const handleGoBack = () => {
-  // è¿”å›žåˆ° process é¡µé¢
+  // Navegar de volta ao projeto
   if (projectData.value?.project_id) {
     router.push({ name: 'Process', params: { projectId: projectData.value.project_id } })
   } else {
@@ -141,112 +115,112 @@ const handleGoBack = () => {
 }
 
 const handleNextStep = (params = {}) => {
-  addLog('è¿›å…¥ Step 3: Start Simulation')
+  addLog('Iniciando Etapa 3: Executar Simulacao')
   
-  // è®°å½•æ¨¡æ‹Ÿè½®æ•°é…ç½®
+
   if (params.maxRounds) {
-    addLog(`è‡ªå®šä¹‰æ¨¡æ‹Ÿè½®æ•°: ${params.maxRounds} è½®`)
+    addLog(`Rodadas personalizadas: ${params.maxRounds}`)
   } else {
-    addLog('ä½¿ç”¨è‡ªåŠ¨é…ç½®çš„æ¨¡æ‹Ÿè½®æ•°')
+    addLog('Usando configuracao automatica de rodadas')
   }
   
-  // æž„å»ºè·¯ç”±å‚æ•°
+
   const routeParams = {
     name: 'SimulationRun',
     params: { simulationId: currentSimulationId.value }
   }
   
-  // å¦‚æžœæœ‰è‡ªå®šä¹‰è½®æ•°ï¼Œé€šè¿‡ query å‚æ•°ä¼ é€’
+
   if (params.maxRounds) {
     routeParams.query = { maxRounds: params.maxRounds }
   }
   
-  // è·³è½¬åˆ° Step 3 é¡µé¢
+
   router.push(routeParams)
 }
 
 // --- Data Logic ---
 
 /**
- * æ£€æŸ¥å¹¶å…³é—­æ­£åœ¨è¿è¡Œçš„æ¨¡æ‹Ÿ
- * å½“ç”¨æˆ·ä»Ž Step 3 è¿”å›žåˆ° Step 2 æ—¶ï¼Œé»˜è®¤ç”¨æˆ·è¦é€€å‡ºæ¨¡æ‹Ÿ
+ * Verificar e encerrar simulacao em execucao
+ * chamado quando usuario volta do Step 3
  */
 const checkAndStopRunningSimulation = async () => {
   if (!currentSimulationId.value) return
   
   try {
-    // å…ˆæ£€æŸ¥æ¨¡æ‹ŸçŽ¯å¢ƒæ˜¯å¦å­˜æ´»
+    // Verificar se o ambiente de simulacao esta ativo
     const envStatusRes = await getEnvStatus({ simulation_id: currentSimulationId.value })
     
     if (envStatusRes.success && envStatusRes.data?.env_alive) {
-      addLog('æ£€æµ‹åˆ°æ¨¡æ‹ŸçŽ¯å¢ƒæ­£åœ¨è¿è¡Œï¼Œæ­£åœ¨å…³é—­...')
+      addLog('Encerrando ambiente de simulacao ativo...')
       
-      // å°è¯•ä¼˜é›…å…³é—­æ¨¡æ‹ŸçŽ¯å¢ƒ
+      // Tentar encerrar o ambiente com elegancia
       try {
         const closeRes = await closeSimulationEnv({ 
           simulation_id: currentSimulationId.value,
-          timeout: 10  // 10ç§’è¶…æ—¶
+          timeout: 10
         })
         
         if (closeRes.success) {
-          addLog('âœ“ æ¨¡æ‹ŸçŽ¯å¢ƒå·²å…³é—­')
+          addLog('Ambiente de simulacao encerrado')
         } else {
-          addLog(`å…³é—­æ¨¡æ‹ŸçŽ¯å¢ƒå¤±è´¥: ${closeRes.error || 'æœªçŸ¥é”™è¯¯'}`)
-          // å¦‚æžœä¼˜é›…å…³é—­å¤±è´¥ï¼Œå°è¯•å¼ºåˆ¶åœæ­¢
+          addLog(`Falha ao encerrar ambiente: ${closeRes.error || 'erro desconhecido'}`)
+          // Tentar forcar parada se encerramento falhou
           await forceStopSimulation()
         }
       } catch (closeErr) {
-        addLog(`å…³é—­æ¨¡æ‹ŸçŽ¯å¢ƒå¼‚å¸¸: ${closeErr.message}`)
-        // å¦‚æžœä¼˜é›…å…³é—­å¼‚å¸¸ï¼Œå°è¯•å¼ºåˆ¶åœæ­¢
+        addLog(`Excecao ao encerrar ambiente: ${closeErr.message}`)
+        // Tentar forcar parada se excecao ocorreu
         await forceStopSimulation()
       }
     } else {
-      // çŽ¯å¢ƒæœªè¿è¡Œï¼Œä½†å¯èƒ½è¿›ç¨‹è¿˜åœ¨ï¼Œæ£€æŸ¥æ¨¡æ‹ŸçŠ¶æ€
+      // Ambiente inativo, verificar status da simulacao
       const simRes = await getSimulation(currentSimulationId.value)
       if (simRes.success && simRes.data?.status === 'running') {
-        addLog('æ£€æµ‹åˆ°æ¨¡æ‹ŸçŠ¶æ€ä¸ºè¿è¡Œä¸­ï¼Œæ­£åœ¨åœæ­¢...')
+        addLog('Simulacao em execucao detectada, parando...')
         await forceStopSimulation()
       }
     }
   } catch (err) {
-    // æ£€æŸ¥çŽ¯å¢ƒçŠ¶æ€å¤±è´¥ä¸å½±å“åŽç»­æµç¨‹
-    console.warn('æ£€æŸ¥æ¨¡æ‹ŸçŠ¶æ€å¤±è´¥:', err)
+    // Falha na verificacao nao impede o fluxo
+    console.warn('Falha ao verificar status da simulacao:', err)
   }
 }
 
 /**
- * å¼ºåˆ¶åœæ­¢æ¨¡æ‹Ÿ
+ * Forccar parada da simulacao
  */
 const forceStopSimulation = async () => {
   try {
     const stopRes = await stopSimulation({ simulation_id: currentSimulationId.value })
     if (stopRes.success) {
-      addLog('âœ“ æ¨¡æ‹Ÿå·²å¼ºåˆ¶åœæ­¢')
+      addLog('Simulacao encerrada forcadamente')
     } else {
-      addLog(`å¼ºåˆ¶åœæ­¢æ¨¡æ‹Ÿå¤±è´¥: ${stopRes.error || 'æœªçŸ¥é”™è¯¯'}`)
+      addLog(`Falha ao forcar parada: ${stopRes.error || 'erro desconhecido'}`)
     }
   } catch (err) {
-    addLog(`å¼ºåˆ¶åœæ­¢æ¨¡æ‹Ÿå¼‚å¸¸: ${err.message}`)
+    addLog(`Excecao ao forcar parada: ${err.message}`)
   }
 }
 
 const loadSimulationData = async () => {
   try {
-    addLog(`åŠ è½½æ¨¡æ‹Ÿæ•°æ®: ${currentSimulationId.value}`)
+    addLog(`Carregando simulacao: ${currentSimulationId.value}`)
     
-    // èŽ·å– simulation ä¿¡æ¯
+    // Buscar informacoes da simulacao
     const simRes = await getSimulation(currentSimulationId.value)
     if (simRes.success && simRes.data) {
       const simData = simRes.data
       
-      // èŽ·å– project ä¿¡æ¯
+      // Buscar informacoes do projeto
       if (simData.project_id) {
         const projRes = await getProject(simData.project_id)
         if (projRes.success && projRes.data) {
           projectData.value = projRes.data
-          addLog(`é¡¹ç›®åŠ è½½æˆåŠŸ: ${projRes.data.project_id}`)
+          addLog(`Projeto carregado: ${projRes.data.project_id}`)
           
-          // èŽ·å– graph æ•°æ®
+          // Buscar dados do grafo
           if (projRes.data.graph_id) {
             await loadGraph(projRes.data.graph_id)
           }
@@ -255,10 +229,10 @@ const loadSimulationData = async () => {
       // Load agent profiles for graph node enrichment
       loadAgentProfiles()
     } else {
-      addLog(`åŠ è½½æ¨¡æ‹Ÿæ•°æ®å¤±è´¥: ${simRes.error || 'æœªçŸ¥é”™è¯¯'}`)
+      addLog(`Falha ao carregar simulacao: ${simRes.error || 'erro desconhecido'}`)
     }
   } catch (err) {
-    addLog(`åŠ è½½å¼‚å¸¸: ${err.message}`)
+    addLog(`Erro ao carregar: ${err.message}`)
   }
 }
 
@@ -287,10 +261,10 @@ const loadGraph = async (graphId) => {
     const res = await getGraphData(graphId)
     if (res.success) {
       graphData.value = res.data
-      addLog('Graph data loaded successfully')
+      addLog('Grafo carregado com sucesso')
     }
   } catch (err) {
-    addLog(`Failed to load graph: ${err.message}`)
+    addLog(`Erro ao carregar grafo: ${err.message}`)
   } finally {
     graphLoading.value = false
   }
@@ -305,12 +279,12 @@ const refreshGraph = () => {
 onMounted(async () => {
   isMobileView.value = window.innerWidth < 768
   window.addEventListener('resize', handleViewResize)
-  addLog('SimulationView åˆå§‹åŒ–')
+  addLog('Carregando configuracao de ambiente...')
   
-  // æ£€æŸ¥å¹¶å…³é—­æ­£åœ¨è¿è¡Œçš„æ¨¡æ‹Ÿï¼ˆç”¨æˆ·ä»Ž Step 3 è¿”å›žæ—¶ï¼‰
+  // Verificar e encerrar simulacoes ativas (ao retornar do Step 3)
   await checkAndStopRunningSimulation()
   
-  // åŠ è½½æ¨¡æ‹Ÿæ•°æ®
+  // Carregar dados da simulacao
   loadSimulationData()
 })
 onUnmounted(() => {
@@ -349,22 +323,21 @@ onUnmounted(() => {
 }
 .mv-logo:hover { opacity: 1; }
 
-.header-center { position: absolute; left: 50%; transform: translateX(-50%); }
-
+.header-center { flex: 1; display: flex; align-items: center; justify-content: center; }
 .header-right { display: flex; align-items: center; gap: 14px; }
 
-.mv-step-tag {
-  font-family: var(--mono); font-size: 0.7rem;
-  color: var(--text2); display: flex; align-items: center; gap: 8px;
+/* ── BREADCRUMB ── */
+.mv-crumb { display: flex; align-items: center; gap: 8px; }
+.mv-crumb-project {
+  font-size: 0.72rem; font-weight: 600; color: var(--text);
+  max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.mv-step-n { color: var(--text3); }
-
-.mv-sep { width: 1px; height: 14px; background: var(--border2); }
+.mv-crumb-sep { color: var(--border2); font-size: 0.72rem; }
+.mv-crumb-step { font-size: 0.72rem; color: var(--text3); }
 
 .mv-status {
   display: flex; align-items: center; gap: 6px;
-  font-family: var(--mono); font-size: 0.66rem;
-  color: var(--text2); letter-spacing: 0.06em;
+  font-size: 0.64rem; color: var(--text2); letter-spacing: 0.06em;
 }
 .mv-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--text3); }
 .mv-status.processing .mv-dot { background: #3b82f6; animation: blink 1.2s infinite; }
@@ -372,76 +345,17 @@ onUnmounted(() => {
 .mv-status.error .mv-dot { background: var(--red); }
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-/* Content */
 .mv-content { flex: 1; display: flex; overflow: hidden; }
+.mv-panel { height: 100%; overflow: hidden; }
 
-.mv-panel {
-  height: 100%; overflow: hidden;
-  transition: width 0.4s cubic-bezier(0.25,0.8,0.25,1), opacity 0.3s;
-}
-.mv-panel.left { border-right: 1px solid var(--border); }
-
-.mv-panel.right.floating {
-  position: fixed !important;
-  bottom: 20px !important; right: 20px !important;
-  width: 240px !important; height: auto !important;
-  z-index: 50 !important;
-  border-radius: 12px;
-  background: var(--bg2) !important;
-  backdrop-filter: blur(10px) saturate(180%);
-  border: 1px solid var(--border2);
-  box-shadow: var(--shadow-md);
-  overflow: hidden; cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25,0.8,0.25,1);
-}
-.mv-panel.right.floating:hover {
-  border-color: var(--green-border);
-  box-shadow: var(--shadow-md);
-}
-
-.mv-float-tab {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  padding: 16px 12px; gap: 8px; width: 100%; height: 100%;
-}
-.mv-tab-icon { font-size: 20px; color: var(--text2); transition: all 0.3s ease; }
-.mv-float-tab:hover .mv-tab-icon { color: var(--text); transform: translateY(2px); }
-.mv-tab-text {
-  font-size: 0.65rem; font-weight: 600; letter-spacing: 0.08em;
-  color: var(--text2); text-align: center; transition: color 0.3s ease;
-}
-.mv-float-tab:hover .mv-tab-text { color: var(--text); }
-
-.mv-panel.right.expanded {
-  position: static;
-  height: 100%;
+.mv-panel.console {
+  width: 420px; min-width: 380px; flex-shrink: 0;
   background: var(--bg);
-  backdrop-filter: none;
-  border: none;
-  border-left: 1px solid var(--border);
-  box-shadow: none;
-  border-radius: 0;
+  border-right: 1px solid var(--border);
+  overflow: hidden;
 }
-
-@media (max-width: 767px) {
-  .mv-panel.right.floating { width: 160px !important; }
-  .mv-panel.right.expanded { border-left: none; border-top: 1px solid var(--border); }
-}
-
+.mv-panel.canvas { flex: 1; min-width: 0; }
 .mv-panel-content { width: 100%; height: 100%; overflow: hidden; position: relative; }
-
-.mv-close-panel {
-  position: absolute; top: 10px; right: 10px;
-  width: 28px; height: 28px;
-  background: transparent; border: 1px solid var(--border2);
-  color: var(--text2); font-size: 18px; cursor: pointer;
-  border-radius: 4px; display: flex; align-items: center; justify-content: center;
-  z-index: 100; transition: all 0.2s ease;
-}
-.mv-close-panel:hover {
-  background: var(--surface-2);
-  border-color: var(--text2); color: var(--text);
-}
 </style>
 
 

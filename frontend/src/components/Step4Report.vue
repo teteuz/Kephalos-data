@@ -136,6 +136,30 @@
             </svg>
           </button>
 
+          <!-- PDF Export (Pro only) -->
+          <div v-if="isComplete" class="pdf-export-row">
+            <button
+              v-if="isSubscribed && planName === 'Pro'"
+              class="pdf-export-btn"
+              @click="() => window.print()"
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                <polyline points="14 2 14 8 20 8"/>
+                <line x1="16" y1="13" x2="8" y2="13"/>
+                <line x1="16" y1="17" x2="8" y2="17"/>
+              </svg>
+              Exportar PDF
+            </button>
+            <div v-else class="pdf-locked" title="Disponível no plano Pro">
+              <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+              </svg>
+              Exportar PDF · Pro
+            </div>
+          </div>
+
           <div class="workflow-divider"></div>
         </div>
 
@@ -393,8 +417,10 @@
 import { ref, computed, watch, onMounted, onUnmounted, nextTick, h, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { getAgentLog, getConsoleLog } from '../api/report'
+import { useSubscription } from '../composables/useSubscription'
 
 const router = useRouter()
+const { isSubscribed, planName } = useSubscription()
 
 const props = defineProps({
   reportId: String,
@@ -5149,4 +5175,77 @@ watch(() => props.reportId, (newId) => {
 .log-msg.error { color: #EF5350; }
 .log-msg.warning { color: #FFA726; }
 .log-msg.success { color: #66BB6A; }
+
+/* ── PDF export ── */
+.pdf-export-row {
+  margin-top: 8px;
+  padding: 0 16px 4px;
+}
+
+.pdf-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: transparent;
+  border: 1px solid rgba(189, 235, 181, 0.35);
+  color: #BDEBB5;
+  font-size: 12px;
+  border-radius: 6px;
+  padding: 7px 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+  width: 100%;
+  justify-content: center;
+}
+
+.pdf-export-btn:hover {
+  background: rgba(189, 235, 181, 0.07);
+  border-color: rgba(189, 235, 181, 0.6);
+}
+
+.pdf-locked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.2);
+  font-size: 12px;
+  border-radius: 6px;
+  padding: 7px 14px;
+  cursor: not-allowed;
+  user-select: none;
+}
+
+/* ── Impressão / Export PDF ── */
+@media print {
+  body > *:not(.report-panel),
+  .right-panel,
+  .panel-header,
+  .workflow-overview,
+  .next-step-btn,
+  .pdf-export-row,
+  header { display: none !important; }
+
+  .report-panel { display: block !important; }
+  .main-split-layout { display: block !important; }
+
+  .left-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+
+  .report-content-wrapper {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 24px;
+  }
+
+  .generated-content, .main-title, .sub-title, .section-title { color: #111 !important; }
+  .section-number { color: #555 !important; }
+  .report-header-block, .report-section-item { page-break-inside: avoid; }
+}
 </style>

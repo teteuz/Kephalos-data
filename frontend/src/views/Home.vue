@@ -108,9 +108,6 @@
           <div class="k-uc-sector">{{ uc.sector }}</div>
           <div class="k-uc-headline">{{ uc.headline }}</div>
           <div class="k-uc-body">{{ uc.body }}</div>
-          <div class="k-uc-tags">
-            <span class="k-uc-tag" v-for="tag in uc.tags" :key="tag">{{ tag }}</span>
-          </div>
         </div>
       </div>
     </section>
@@ -148,15 +145,15 @@
         <div class="k-revenue-left">
           <span class="k-label">POR QUE FAZER UPGRADE</span>
           <h2 class="k-revenue-title">Você um passo à frente,<br>Sempre.</h2>
-          <p class="k-revenue-sub">Enquanto alguns ainda estão debatendo hipóteses, você já rodou o cenário, viu o resultado e ajustou a estratégia. O Pro remove todos os limites. Rode quantas simulações suas decisões exigirem.</p>
+          <p class="k-revenue-sub">Enquanto alguns ainda estão debatendo hipóteses, você já rodou o cenário, viu o resultado e ajustou a estratégia. O Pro amplia seus limites e desbloqueia os relatórios completos em PDF.</p>
           <div class="k-revenue-features">
             <div class="k-rf-item">
               <div class="k-rf-icon">
                 <svg viewBox="0 0 16 16" width="14" fill="none" stroke="#BDEBB5" stroke-width="1.5"><polyline points="3 8 6.5 11.5 13 4"/></svg>
               </div>
               <div>
-                <div class="k-rf-title">Execuções ilimitadas</div>
-                <div class="k-rf-desc">Sem limites mensais. Execute quantos cenários suas decisões exigirem.</div>
+                <div class="k-rf-title">50 execuções por mês</div>
+                <div class="k-rf-desc">10× mais que o plano gratuito. Rode cenários com frequência sem esperar o mês virar.</div>
               </div>
             </div>
             <div class="k-rf-item">
@@ -164,7 +161,7 @@
                 <svg viewBox="0 0 16 16" width="14" fill="none" stroke="#BDEBB5" stroke-width="1.5"><polyline points="3 8 6.5 11.5 13 4"/></svg>
               </div>
               <div>
-                <div class="k-rf-title">Agentes ilimitados por execução</div>
+                <div class="k-rf-title">Até 500+ agentes por execução</div>
                 <div class="k-rf-desc">Mais agentes significa mais comportamento emergente, previsões mais ricas, melhores decisões.</div>
               </div>
             </div>
@@ -173,14 +170,14 @@
                 <svg viewBox="0 0 16 16" width="14" fill="none" stroke="#BDEBB5" stroke-width="1.5"><polyline points="3 8 6.5 11.5 13 4"/></svg>
               </div>
               <div>
-                <div class="k-rf-title">Suite completa de relatórios + modo interação</div>
-                <div class="k-rf-desc">Relatórios profundos de atribuição e interação ao vivo com agentes. Disponível só no Pro.</div>
+                <div class="k-rf-title">Relatório completo exportável em PDF</div>
+                <div class="k-rf-desc">Atribuição de influência, narrativas emergentes e recomendações — exportáveis para apresentações e decisões em equipe.</div>
               </div>
             </div>
           </div>
           <div class="k-revenue-cta-row">
             <router-link to="/pricing" class="k-btn-run" v-if="!isAuthenticated || !isSubscribed">
-              Assinar Pro por R$34,99/mês
+              Assinar Pro por R$49,99/mês
               <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><line x1="3" y1="8" x2="13" y2="8"/><polyline points="9 4 13 8 9 12"/></svg>
             </router-link>
             <span class="k-revenue-cancel">Cancele quando quiser. Sem contratos.</span>
@@ -208,7 +205,7 @@
       <div class="k-pricing-cta-inner">
         <span class="k-label">PLANOS</span>
         <h2 class="k-pricing-cta-title">Comece explorando. Escale quando precisar.</h2>
-        <p class="k-pricing-cta-sub">Qualquer pessoa pode começar grátis com 2 simulações/mês. Quando suas decisões exigirem mais, o Pro libera tudo por R$34,99/mês.</p>
+        <p class="k-pricing-cta-sub">Qualquer pessoa pode começar grátis com 5 simulações/mês. Quando suas decisões exigirem mais, o Pro libera tudo por R$49,99/mês.</p>
         <div class="k-pricing-cta-btns">
           <router-link to="/register" class="k-btn-run">
             Criar conta grátis
@@ -223,11 +220,11 @@
     <section v-if="isAuthenticated && !isSubscribed" class="k-pricing-cta">
       <div class="k-pricing-cta-inner">
         <span class="k-label">PRO PLAN</span>
-        <h2 class="k-pricing-cta-title">Sem limites. Sem espera.</h2>
-        <p class="k-pricing-cta-sub">Rode quantos cenários precisar, com o máximo de agentes, e acesse a suíte completa de relatórios e modo de interação. Tudo liberado no Pro.</p>
+        <h2 class="k-pricing-cta-title">Mais execuções. Relatório em PDF.</h2>
+        <p class="k-pricing-cta-sub">50 simulações por mês, até 500+ agentes, relatórios completos exportáveis em PDF e modo de interação ao vivo. Tudo liberado no Pro.</p>
         <div class="k-pricing-cta-btns">
           <router-link to="/pricing" class="k-btn-run">
-            Upgrade para Pro por R$34,99/mês
+            Upgrade para Pro por R$49,99/mês
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="3" y1="8" x2="13" y2="8"/><polyline points="9 4 13 8 9 12"/></svg>
           </router-link>
         </div>
@@ -263,6 +260,26 @@
         </div>
       </div>
     </section>
+
+    <!-- Footer -->
+    <footer class="k-footer">
+      <a href="mailto:kephalosdata@gmail.com" class="k-footer-btn">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+          <polyline points="22,6 12,13 2,6"/>
+        </svg>
+        Suporte
+      </a>
+      <a href="https://instagram.com/kephalosai/" target="_blank" rel="noopener noreferrer" class="k-footer-btn">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8">
+          <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+          <circle cx="12" cy="12" r="4"/>
+          <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
+        </svg>
+        Instagram
+      </a>
+      <span class="k-footer-copy">© 2026 Kephalos</span>
+    </footer>
   </div>
 </template>
 
@@ -337,10 +354,8 @@ const capabilities = [
 ]
 
 const trustStats = [
-  { value: '2', label: 'Plataformas em paralelo', note: 'Feed público + Comunidade de tópicos, simultaneamente' },
   { value: '72h', label: 'De vida social simulada', note: '3 dias de posts, reações, tendências e debates entre agentes, por execução' },
   { value: '~30min', label: 'Tempo real de execução', note: 'Para rodar 72h completas de dinâmica social comprimida' },
-  { value: '60:1', label: 'Compressão temporal', note: '1 minuto de cômputo equivale a 60 minutos de atividade social' },
 ]
 
 const trustArticles = [
@@ -388,11 +403,11 @@ const vClickOutside = {
 }
 
 const compareRows = [
-  { feature: 'Simulações / mês', free: '2', pro: '<span class="k-pro-hl">Ilimitadas</span>' },
+  { feature: 'Simulações / mês', free: '5', pro: '<span class="k-pro-hl">50</span>' },
   { feature: 'Agentes por execução', free: '50', pro: '<span class="k-pro-hl">500+</span>' },
-  { feature: 'Suite de relatórios', free: 'Básico', pro: '<span class="k-pro-hl">Completo</span>' },
+  { feature: 'Relatório em PDF', free: '✗', pro: '<span class="k-pro-hl">✓</span>' },
+  { feature: 'Suite completa de análise', free: 'Básico', pro: '<span class="k-pro-hl">Completo</span>' },
   { feature: 'Modo de interação', free: '✗', pro: '<span class="k-pro-hl">✓</span>' },
-  { feature: 'Mapeamento de cenário', free: '✗', pro: '<span class="k-pro-hl">✓</span>' },
   { feature: 'Suporte prioritário', free: '✗', pro: '<span class="k-pro-hl">✓</span>' },
 ]
 
@@ -404,7 +419,7 @@ const useCases = [
     id: 'marketing',
     sector: 'MARKETING',
     headline: 'Saiba como seu público vai reagir antes de lançar.',
-    body: 'Simule campanhas em milhares de arquétipos de consumidores. Preveja propagação de narrativas, mudanças de sentimento e reações negativas — antes de gastar um centavo em mídia.',
+    body: 'Simule campanhas em milhares de arquétipos de consumidores. Preveja propagação de narrativas, mudanças de sentimento e reações negativas antes de gastar um centavo em mídia.',
     tags: ['Comportamento do consumidor', 'Previsão de sentimento', 'Teste de campanha', 'Propagação de narrativa'],
     icon: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="#BDEBB5" stroke-width="1.4"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'
   },
@@ -885,17 +900,21 @@ onMounted(() => {
 
 /* ─── STATS BAND ─── */
 .k-stats-band {
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   border-top: 1px solid var(--border);
   border-bottom: 1px solid var(--border);
 }
 .k-stat {
   display: flex; flex-direction: column; gap: 8px;
-  padding: 44px 32px 36px;
+  padding: 48px 0 40px;
+  align-items: center;
+  text-align: center;
   border-right: 1px solid var(--border);
   position: relative;
 }
-.k-stat:last-child { border-right: none; }
+.k-stat:first-child { border-right: 1px solid var(--border); }
+.k-stat-note { max-width: 220px; }
 .k-stat-accent {
   position: absolute; top: 0; left: 0; right: 0; height: 2px;
   background: linear-gradient(to right, var(--green), transparent);
@@ -961,18 +980,52 @@ onMounted(() => {
 /* responsive additions */
 @media (max-width: 1100px) {
   .k-uc-grid { grid-template-columns: 1fr; }
-  .k-stats-band { grid-template-columns: repeat(2, 1fr); gap: 24px; }
   .k-stat + .k-stat { border-left: none; }
   .k-how-steps { grid-template-columns: 1fr 1fr; }
   .k-how-steps::before { display: none; }
 }
 @media (max-width: 640px) {
-  .k-stats-band { grid-template-columns: 1fr 1fr; }
   .k-stat { padding: 20px 14px 18px; }
   .k-stat-value { font-size: clamp(1.6rem, 6.5vw, 2.2rem); letter-spacing: -0.03em; }
   .k-stat-label { font-size: 0.6rem; }
   .k-stat-note { font-size: 0.56rem; line-height: 1.5; }
   .k-how-steps { grid-template-columns: 1fr; }
+}
+
+/* ── Footer ── */
+.k-footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 28px 24px;
+  border-top: 1px solid var(--border);
+}
+
+.k-footer-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  background: transparent;
+  font-family: var(--font);
+  font-size: 0.78rem;
+  border-radius: 6px;
+  padding: 7px 16px;
+  text-decoration: none;
+  transition: border-color 0.14s, color 0.14s;
+}
+
+.k-footer-btn:hover {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.k-footer-copy {
+  font-size: 0.7rem;
+  color: var(--text3);
+  margin-left: 4px;
 }
 
 </style>

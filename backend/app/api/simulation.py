@@ -20,8 +20,8 @@ from ..models.project import ProjectManager
 
 logger = get_logger('kephalosdata.api.simulation')
 
-FREE_SIMULATION_LIMIT = 2
-PRO_SIMULATION_LIMIT = 30
+FREE_SIMULATION_LIMIT = 5
+PRO_SIMULATION_LIMIT = 50
 
 
 # ── Quota helpers ──────────────────────────────────────────────────────────────

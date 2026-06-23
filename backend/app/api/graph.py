@@ -212,11 +212,18 @@ def generate_ontology():
                     document_texts.append(text)
                     all_text += f"\n\n=== {file_info['original_filename']} ===\n{text}"
 
-        # Se nenhum arquivo foi processado, usa o próprio requisito de simulação como contexto
+        # Sem arquivos: gera documento sintético com personagens para o cenário
         if not document_texts:
-            document_texts = [simulation_requirement]
-            all_text = simulation_requirement
-            logger.info("Nenhum arquivo fornecido — usando simulation_requirement como documento de entrada")
+            from ..services.scenario_seed_generator import generate_scenario_seed
+            scenario_label = project_name if project_name and project_name != 'Unnamed Project' else simulation_requirement
+            logger.info("Nenhum arquivo fornecido — gerando seed sintético de personagens")
+            seed_text = generate_scenario_seed(
+                scenario=scenario_label,
+                requirement=simulation_requirement,
+                agent_count=25
+            )
+            document_texts = [seed_text]
+            all_text = seed_text
         
         # 保存提取的文本
         project.total_text_length = len(all_text)

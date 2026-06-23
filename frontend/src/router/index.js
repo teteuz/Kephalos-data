@@ -72,7 +72,9 @@ const routes = [
     component: InteractionView,
     props: true,
     meta: { requiresAuth: true }
-  }
+  },
+  // 404 catch-all
+  { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 
 const router = createRouter({
